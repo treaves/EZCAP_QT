@@ -2,20 +2,17 @@
 #include "ui_fitHeader.h"
 #include "ezCap.hpp"
 #include "mainMenu.hpp"
-//#include "fitsio.hpp"
-
+#include <fitsio.h>
 #include <QFile>
 #include <QtCore/QTextStream>
 #include <QCloseEvent>
 #include <QLabel>
-#include <QDebug>
 #include <QAbstractButton>
 #include <QStylePainter>
-#include <QDir>
 #include <QListView>
 #include <QTextCodec>
 #include <QDateTime>
-
+#include <opencv2/core/core_c.h>
 
 FitHeader *fitHeader_dialog;
 extern IX ix;

@@ -2,11 +2,10 @@
 #include "ui_planner.h"
 #include "ezCap.hpp"
 #include "delegate.hpp"
-//#include "fitsio.hpp"
+#include <fitsio.h>
 #include "managementMenu.hpp"
 #include "ui_managementMenu.h"
 #include "cfwControl.hpp"
-
 #include <QFileDialog>
 #include <QMessageBox>
 #include <QDebug>
@@ -14,6 +13,7 @@
 #include <QSettings>
 #include <QMutex>
 #include <QItemDelegate>
+#include <opencv2/core/core_c.h>
 
 Planner *planner_dialog;
 extern struct IX ix;

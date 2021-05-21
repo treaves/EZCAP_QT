@@ -92,12 +92,12 @@ QTableWidget
 QTableWidget QHeaderView::section
 {
     color: white;
-    border-image: url(:/image/button.bmp);
+    border-image: url(:/images/button.bmp);
 }
 QTableCornerButton::section
 {
     /*set the corner background image*/
-    border-image: url(:/image/button.bmp);
+    border-image: url(:/images/button.bmp);
 }
 QTableWidget::item:selected
 {
@@ -147,29 +147,29 @@ QTableWidget QScrollBar:up-arrow:vertical
 {
     width: 8px;
     height: 8px;
-    border-image: url(:/image/up-arrow.png);
+    border-image: url(:/images/up-arrow.png);
 }
 QTableWidget QScrollBar:up-arrow:vertical:hover
 {
-    border-image: url(:/image/up-arrow_hover.png);
+    border-image: url(:/images/up-arrow_hover.png);
 }
 QTableWidget QScrollBar:up-arrow:vertical:pressed
 {
-    border-image: url(:/image/up-arrow_hover.png);
+    border-image: url(:/images/up-arrow_hover.png);
 }
 QTableWidget QScrollBar::down-arrow:vertical
 {
     width: 8px;
     height: 8px;
-    border-image: url(:/image/down-arrow.png);
+    border-image: url(:/images/down-arrow.png);
 }
 QTableWidget QScrollBar::down-arrow:vertical:hover
 {
-    border-image: url(:/image/down-arrow_hover.png);
+    border-image: url(:/images/down-arrow_hover.png);
 }
 QTableWidget QScrollBar::down-arrow:vertical:pressed
 {
-    border-image: url(:/image/down-arrow_hover.png);
+    border-image: url(:/images/down-arrow_hover.png);
 }
 QTableWidget QScrollBar::add-page:vertical, QScrollBar::sub-page:vertical
 {
@@ -229,29 +229,29 @@ QScrollArea QScrollBar:up-arrow:vertical
 {
     width: 8px;
     height: 8px;
-    border-image: url(:/image/up-arrow.png);
+    border-image: url(:/images/up-arrow.png);
 }
 QScrollArea QScrollBar:up-arrow:vertical:hover
 {
-    border-image: url(:/image/up-arrow_hover.png);
+    border-image: url(:/images/up-arrow_hover.png);
 }
 QScrollArea QScrollBar:up-arrow:vertical:pressed
 {
-    border-image: url(:/image/up-arrow_hover.png);
+    border-image: url(:/images/up-arrow_hover.png);
 }
 QScrollArea QScrollBar::down-arrow:vertical
 {
     width: 8px;
     height: 8px;
-    border-image: url(:/image/down-arrow.png);
+    border-image: url(:/images/down-arrow.png);
 }
 QScrollArea QScrollBar::down-arrow:vertical:hover
 {
-    border-image: url(:/image/down-arrow_hover.png);
+    border-image: url(:/images/down-arrow_hover.png);
 }
 QScrollArea QScrollBar::down-arrow:vertical:pressed
 {
-    border-image: url(:/image/down-arrow_hover.png);
+    border-image: url(:/images/down-arrow_hover.png);
 }
 QScrollArea QScrollBar::add-page:vertical, QScrollBar::sub-page:vertical
 {
@@ -301,29 +301,29 @@ QScrollArea QScrollBar:left-arrow:horizontal
 {
     width: 8px;
     height: 8px;
-    border-image: url(:/image/left-arrow.png);
+    border-image: url(:/images/left-arrow.png);
 }
 QScrollArea QScrollBar:left-arrow:horizontal:hover
 {
-    border-image: url(:/image/left-arrow_hover.png);
+    border-image: url(:/images/left-arrow_hover.png);
 }
 QScrollArea QScrollBar:left-arrow:horizontal:pressed
 {
-    border-image: url(:/image/left-arrow_hover.png);
+    border-image: url(:/images/left-arrow_hover.png);
 }
 QScrollArea QScrollBar::right-arrow:horizontal
 {
     width: 8px;
     height: 8px;
-    border-image: url(:/image/right-arrow.png);
+    border-image: url(:/images/right-arrow.png);
 }
 QScrollArea QScrollBar::right-arrow:horizontal:hover
 {
-    border-image: url(:/image/right-arrow_hover.png);
+    border-image: url(:/images/right-arrow_hover.png);
 }
 QScrollArea QScrollBar::right-arrow:horizontal:pressed
 {
-    border-image: url(:/image/right-arrow_hover.png);
+    border-image: url(:/images/right-arrow_hover.png);
 }
 QScrollArea QScrollBar::add-page:horizontal, QScrollBar::sub-page:horizontal
 {
@@ -356,17 +356,17 @@ QGroupBox::title
 QSlider::groove:Horizontal
 {
     height:4px;
-    border-image: url(:/image/slider_bar.png);
+    border-image: url(:/images/slider_bar.png);
 }
 QSlider::handle:Horizontal
 {
     width:13px;
-    border-image:url(:/image/slider_thumb_off.png);
+    border-image:url(:/images/slider_thumb_off.png);
     margin: -7px 0px -10px 0px;
 }
 QSlider::handle:horizontal:hover
 {
-    border-image:url(:/image/slider_thumb_on.png);
+    border-image:url(:/images/slider_thumb_on.png);
     margin: -7px 0px -10px 0px;
 }
 
@@ -383,13 +383,13 @@ QSlider#vSlider_power_tempControl::groove:vertical
 }
 QSlider#vSlider_power_tempControl::handle:vertical
 {
-    border-image: url(:/image/vslider_thumb_off.png) -1 0 1 -1 stretch stretch;
+    border-image: url(:/images/vslider_thumb_off.png) -1 0 1 -1 stretch stretch;
     margin: -2px -8px -2px -15px; /* expand outside the groove */
     height: 16px;
 }
 QSlider#vSlider_power_tempControl::handle:vertical:hover
 {
-    border-image: url(:/image/vslider_thumb_on.png) -1 0 1 -1 stretch stretch;
+    border-image: url(:/images/vslider_thumb_on.png) -1 0 1 -1 stretch stretch;
     margin: -2px -8px -2px -15px; /* expand outside the groove */
     height: 16px;
 }
@@ -399,7 +399,7 @@ QSlider#vSlider_power_tempControl::add-page:vertical {
 	border-radius: 3px;
 }
 QSlider#vSlider_power_tempControl::handle:vertical:disabled {
-	border-image: url(:/image/vslider_thumb_off2.png) -1 0 1 -1 stretch stretch;
+	border-image: url(:/images/vslider_thumb_off2.png) -1 0 1 -1 stretch stretch;
 }
 
 QSlider#vSlider_temp_tempCotrol::groove:vertical
@@ -414,13 +414,13 @@ QSlider#vSlider_temp_tempCotrol::groove:vertical
 }
 QSlider#vSlider_temp_tempCotrol::handle:vertical
 {
-    border-image: url(:/image/vslider_thumb_off.png) -1 0 1 -1 stretch stretch;
+    border-image: url(:/images/vslider_thumb_off.png) -1 0 1 -1 stretch stretch;
     margin: -2px -8px -2px -15px; /* expand outside the groove */
     height: 16px;
 }
 QSlider#vSlider_temp_tempCotrol::handle:vertical:hover
 {
-    border-image: url(:/image/vslider_thumb_on.png) -1 0 1 -1 stretch stretch;
+    border-image: url(:/images/vslider_thumb_on.png) -1 0 1 -1 stretch stretch;
     margin: -2px -8px -2px -15px; /* expand outside the groove */
     height: 16px;
 }
@@ -430,7 +430,7 @@ QSlider#vSlider_temp_tempCotrol::add-page:vertical {
 	border-radius: 3px;
 }
 QSlider#vSlider_temp_tempCotrol::handle:vertical:disabled {
-	border-image: url(:/image/vslider_thumb_off2.png) -1 0 1 -1 stretch stretch;
+	border-image: url(:/images/vslider_thumb_off2.png) -1 0 1 -1 stretch stretch;
 }
 
 /**/QSlider#vSlider_Humidity_tempCotrol::groove:vertical
@@ -441,13 +441,13 @@ QSlider#vSlider_temp_tempCotrol::handle:vertical:disabled {
 }
 QSlider#vSlider_Humidity_tempCotrol::handle:vertical
 {
-    border-image: url(:/image/vslider_thumb_off2.png) -1 0 1 -1 stretch stretch;
+    border-image: url(:/images/vslider_thumb_off2.png) -1 0 1 -1 stretch stretch;
     margin: -2px -8px -2px -15px; 
     height: 16px;
 }
 QSlider#vSlider_Humidity_tempCotrol::handle:vertical:hover
 {
-    border-image: url(:/image/vslider_thumb_on2.png) -1 0 1 -1 stretch stretch;
+    border-image: url(:/images/vslider_thumb_on2.png) -1 0 1 -1 stretch stretch;
     margin: -2px -8px -2px -15px;
     height: 16px;
 }
@@ -465,13 +465,13 @@ QSlider#vSlider_Press_tempCotrol::groove:vertical
 }
 QSlider#vSlider_Press_tempCotrol::handle:vertical
 {
-    border-image: url(:/image/vslider_thumb_off2.png) -1 0 1 -1 stretch stretch;
+    border-image: url(:/images/vslider_thumb_off2.png) -1 0 1 -1 stretch stretch;
     margin: -2px -8px -2px -15px; 
     height: 16px;
 }
 QSlider#vSlider_Press_tempCotrol::handle:vertical:hover
 {
-    border-image: url(:/image/vslider_thumb_on2.png) -1 0 1 -1 stretch stretch;
+    border-image: url(:/images/vslider_thumb_on2.png) -1 0 1 -1 stretch stretch;
     margin: -2px -8px -2px -15px;  expand outside the groove 
     height: 16px;
 }
@@ -486,23 +486,23 @@ QSlider#vSlider_Press_tempCotrol::add-page:vertical {
 QPushButton
 {
     color: white;
-    border-image: url(:/image/button.bmp);
+    border-image: url(:/images/button.bmp);
 }
 QPushButton:hover
 {
-    border-image: url(:/image/buttonHover.bmp);
+    border-image: url(:/images/buttonHover.bmp);
 }
 QPushButton:checked
 {
-    border-image: url(:/image/buttonDown.bmp);
+    border-image: url(:/images/buttonDown.bmp);
 }
 QPushButton:pressed
 {
-    border-image: url(:/image/buttonDown.bmp);
+    border-image: url(:/images/buttonDown.bmp);
 }
 QPushButton::disabled
 {
-    border-image: url(:/image/disable.bmp);
+    border-image: url(:/images/disable.bmp);
 }
 
 QPushButton#pBtn_logo_about
@@ -523,91 +523,91 @@ QPushButton#pBtn_logo_about::pressed
 QPushButton#pBtn_folder_planner
 {
     color: white;
-    border-image: url(:/image/button.bmp) 1 2 0 2;
+    border-image: url(:/images/button.bmp) 1 2 0 2;
 }
 QPushButton#pBtn_folder_planner::hover
 {
-    border-image: url(:/image/buttonHover.bmp) 1 2 0 2;
+    border-image: url(:/images/buttonHover.bmp) 1 2 0 2;
 }
 QPushButton#pBtn_folder_planner::pressed
 {
-    border-image: url(:/image/buttonDown.bmp) 1 2 0 2;
+    border-image: url(:/images/buttonDown.bmp) 1 2 0 2;
 }
 QPushButton#pBtn_calibrateFrame
 {
     color: white;
-    border-image: url(:/image/button.bmp) 1 2 0 2;
+    border-image: url(:/images/button.bmp) 1 2 0 2;
 }
 QPushButton#pBtn_calibrateFrame::hover
 {
-    border-image: url(:/image/buttonHover.bmp) 1 2 0 2;
+    border-image: url(:/images/buttonHover.bmp) 1 2 0 2;
 }
 QPushButton#pBtn_calibrateFrame::pressed
 {
-    border-image: url(:/image/buttonDown.bmp) 1 2 0 2;
+    border-image: url(:/images/buttonDown.bmp) 1 2 0 2;
 }
 QPushButton#pBtn_getRealTemp
 {
     color: white;
-    border-image: url(:/image/button.bmp) 1 2 0 2;
+    border-image: url(:/images/button.bmp) 1 2 0 2;
 }
 QPushButton#pBtn_getRealTemp::hover
 {
-    border-image: url(:/image/buttonHover.bmp) 1 2 0 2;
+    border-image: url(:/images/buttonHover.bmp) 1 2 0 2;
 }
 QPushButton#pBtn_getRealTemp::pressed
 {
-    border-image: url(:/image/buttonDown.bmp) 1 2 0 2;
+    border-image: url(:/images/buttonDown.bmp) 1 2 0 2;
 }
 QPushButton#saveFineTone_favorite
 {
     color: white;
-    border-image: url(:/image/button.bmp) 1 2 0 2;
+    border-image: url(:/images/button.bmp) 1 2 0 2;
 }
 QPushButton#saveFineTone_favorite::hover
 {
-    border-image: url(:/image/buttonHover.bmp) 1 2 0 2;
+    border-image: url(:/images/buttonHover.bmp) 1 2 0 2;
 }
 QPushButton#saveFineTone_favorite::pressed
 {
-    border-image: url(:/image/buttonDown.bmp) 1 2 0 2;
+    border-image: url(:/images/buttonDown.bmp) 1 2 0 2;
 }
 QPushButton#pBtn_setFinetone_9979
 {
     color: white;
-    border-image: url(:/image/button.bmp) 1 2 0 2;
+    border-image: url(:/images/button.bmp) 1 2 0 2;
 }
 QPushButton#pBtn_setFinetone_9979::hover
 {
-    border-image: url(:/image/buttonHover.bmp) 1 2 0 2;
+    border-image: url(:/images/buttonHover.bmp) 1 2 0 2;
 }
 QPushButton#pBtn_setFinetone_9979::pressed
 {
-    border-image: url(:/image/buttonDown.bmp) 1 2 0 2;
+    border-image: url(:/images/buttonDown.bmp) 1 2 0 2;
 }
 QPushButton#pBtn_stop
 {
-    border-image: url(:/image/stop.bmp);
+    border-image: url(:/images/stop.bmp);
 }
 QPushButton#pBtn_stop::hover
 {
-    border-image: url(:/image/stopHover.bmp);
+    border-image: url(:/images/stopHover.bmp);
 }
 QPushButton#pBtn_stop::pressed
 {
-    border-image: url(:/image/stopDown.bmp);
+    border-image: url(:/images/stopDown.bmp);
 }
 QPushButton#pBtn_auto_histogram
 {
-    border-image: url(:/image/auto.bmp);
+    border-image: url(:/images/auto.bmp);
 }
 QPushButton#pBtn_auto_histogram::hover
 {
-    border-image: url(:/image/autoHover.bmp);
+    border-image: url(:/images/autoHover.bmp);
 }
 QPushButton#pBtn_auto_histogram::pressed
 {
-    border-image: url(:/image/stopDown.bmp);
+    border-image: url(:/images/stopDown.bmp);
 }
 
 QPushButton#head_preview
@@ -615,7 +615,7 @@ QPushButton#head_preview
     height:20px;
     border-image: none;
     color: white;
-    background-image: url(:/image/foldHead.bmp);
+    background-image: url(:/images/foldHead.bmp);
     background-repeat: no-repeat;
     background-position: center;
     background-attachment:fixed;
@@ -626,14 +626,14 @@ QPushButton#head_preview
 QPushButton#head_preview:checked
 {
     border-image: none;
-    background-image: url(:/image/unfoldHead.bmp);
+    background-image: url(:/images/unfoldHead.bmp);
 }
 QPushButton#head_focus
 {
     height:20px;
     border-image: none;
     color: white;
-    background-image: url(:/image/foldHead.bmp);
+    background-image: url(:/images/foldHead.bmp);
     background-repeat: no-repeat;
     background-position: center;
     background-attachment:fixed;
@@ -644,14 +644,14 @@ QPushButton#head_focus
 QPushButton#head_focus:checked
 {
     border-image: none;
-    background-image: url(:/image/unfoldHead.bmp);
+    background-image: url(:/images/unfoldHead.bmp);
 }
 QPushButton#head_capture
 {
     height:20px;
     border-image: none;
     color: white;
-    background-image: url(:/image/foldHead.bmp);
+    background-image: url(:/images/foldHead.bmp);
     background-repeat: no-repeat;
     background-position: center;
     background-attachment:fixed;
@@ -662,14 +662,14 @@ QPushButton#head_capture
 QPushButton#head_capture:checked
 {
     border-image: none;
-    background-image: url(:/image/unfoldHead.bmp);
+    background-image: url(:/images/unfoldHead.bmp);
 }
 QPushButton#head_hist
 {
     height:20px;
     border-image: none;
     color: white;
-    background-image: url(:/image/foldHead.bmp);
+    background-image: url(:/images/foldHead.bmp);
     background-repeat: no-repeat;
     background-position: center;
     background-attachment:fixed;
@@ -680,14 +680,14 @@ QPushButton#head_hist
 QPushButton#head_hist:checked
 {
     border-image: none;
-    background-image: url(:/image/unfoldHead.bmp);
+    background-image: url(:/images/unfoldHead.bmp);
 }
 QPushButton#head_screenView
 {
     height:20px;
     border-image: none;
     color: white;
-    background-image: url(:/image/foldHead.bmp);
+    background-image: url(:/images/foldHead.bmp);
     background-repeat: no-repeat;
     background-position: center;
     background-attachment:fixed;
@@ -698,7 +698,7 @@ QPushButton#head_screenView
 QPushButton#head_screenView:checked
 {
     border-image: none;
-    background-image: url(:/image/unfoldHead.bmp);
+    background-image: url(:/images/unfoldHead.bmp);
 }
 QPushButton#okBtn_cameraChooser,#cancelBtn_cameraChooser:focus
 {
@@ -830,19 +830,19 @@ QPlainTextEdit
 }
 QRadioButton:checked
 {
-    border-image: url(:/image/auto.bmp);
+    border-image: url(:/images/auto.bmp);
 }
 QRadioButton:hover
 {
-    border-image: url(:/image/buttonHover.bmp);
+    border-image: url(:/images/buttonHover.bmp);
 }
 QRadioButton:pressed
 {
-    border-image: url(:/image/buttonDown.bmp);
+    border-image: url(:/images/buttonDown.bmp);
 }
 QRadioButton::disabled
 {
-    border-image: url(:/image/disable.bmp);
+    border-image: url(:/images/disable.bmp);
 }*/
 
 /*QRadioButton
@@ -898,7 +898,7 @@ QRadioButton
 QRadioButton
 {
     color: white;
-    border-image: url(:/image/button.bmp);
+    border-image: url(:/images/button.bmp);
 }
 QRadioButton::rBtn {
     width:                  10px;
@@ -907,7 +907,7 @@ QRadioButton::rBtn {
 }
 QRadioButton::rBtn:checked {
     /*border-image: none;#rBtn_manuel,#rBtn_autoControl
-    background-image: url(:/image/radio_track.png);
+    background-image: url(:/images/radio_track.png);
 	border:                 2px solid white;
 	background-color:       blue;
 }
@@ -919,7 +919,7 @@ QRadioButton#rBtn_manuel,#rBtn_autoControl:unchecked {
 QPushButton#head_preview:checked
 {border-image: none;
     border-image: none;
-    background-image: url(:/image/unfoldHead.bmp);
+    background-image: url(:/images/unfoldHead.bmp);
 	background-color:       red;
     border:                 2px solid white;
 }
@@ -1044,7 +1044,7 @@ QComboBox::drop-down
     subcontrol-position: top right;
     width: 20px;
     border-left-width: 0px;
-    border-image: url(:/image/button.bmp);
+    border-image: url(:/images/button.bmp);
     border-left-style: solid; /* just a single line */
     border-top-right-radius: 3px; /* same radius as the QComboBox */
     border-bottom-right-radius: 3px;
@@ -1052,23 +1052,23 @@ QComboBox::drop-down
 
 QComboBox::drop-down:hover
 {
-    border-image: url(:/image/buttonHover.bmp);
+    border-image: url(:/images/buttonHover.bmp);
 }
 
 QComboBox::drop-down:pressed
 {
-    border-image: url(:/image/buttonHover.bmp);
+    border-image: url(:/images/buttonHover.bmp);
 }
 
 QComboBox::drop-down:disabled
 {
-    border-image: url(:/image/disable.bmp);
+    border-image: url(:/images/disable.bmp);
 }
 
 QComboBox::down-arrow
 {
     width: 64px;
-    image: url(:/image/down_arrow.png);
+    image: url(:/images/down_arrow.png);
 }
 
 QComboBox::down-arrow:on
@@ -1127,29 +1127,29 @@ QComboBox QScrollBar:up-arrow:vertical
 {
     width: 8px;
     height: 8px;
-    border-image: url(:/image/up-arrow.png);
+    border-image: url(:/images/up-arrow.png);
 }
 QComboBox QScrollBar:up-arrow:vertical:hover
 {
-    border-image: url(:/image/up-arrow_hover.png);
+    border-image: url(:/images/up-arrow_hover.png);
 }
 QComboBox QScrollBar:up-arrow:vertical:pressed
 {
-    border-image: url(:/image/up-arrow_hover.png);
+    border-image: url(:/images/up-arrow_hover.png);
 }
 QComboBox QScrollBar::down-arrow:vertical
 {
     width: 8px;
     height: 8px;
-    border-image: url(:/image/down-arrow.png);
+    border-image: url(:/images/down-arrow.png);
 }
 QComboBox QScrollBar::down-arrow:vertical:hover
 {
-    border-image: url(:/image/down-arrow_hover.png);
+    border-image: url(:/images/down-arrow_hover.png);
 }
 QComboBox QScrollBar::down-arrow:vertical:pressed
 {
-    border-image: url(:/image/down-arrow_hover.png);
+    border-image: url(:/images/down-arrow_hover.png);
 }
 QComboBox QComboBox QScrollBar::add-page:vertical, QScrollBar::sub-page:vertical
 {
@@ -1203,29 +1203,29 @@ QScrollBar:up-arrow:vertical
 {
     width: 8px;
     height: 8px;
-    border-image: url(:/image/up-arrow.png);
+    border-image: url(:/images/up-arrow.png);
 }
 QScrollBar:up-arrow:vertical:hover
 {
-    border-image: url(:/image/up-arrow_hover.png);
+    border-image: url(:/images/up-arrow_hover.png);
 }
 QScrollBar:up-arrow:vertical:pressed
 {
-    border-image: url(:/image/up-arrow_hover.png);
+    border-image: url(:/images/up-arrow_hover.png);
 }
 QScrollBar::down-arrow:vertical
 {
     width: 8px;
     height: 8px;
-    border-image: url(:/image/down-arrow.png);
+    border-image: url(:/images/down-arrow.png);
 }
 QScrollBar::down-arrow:vertical:hover
 {
-    border-image: url(:/image/down-arrow_hover.png);
+    border-image: url(:/images/down-arrow_hover.png);
 }
 QScrollBar::down-arrow:vertical:pressed
 {
-    border-image: url(:/image/down-arrow_hover.png);
+    border-image: url(:/images/down-arrow_hover.png);
 }
 QScrollBar::add-page:vertical, QScrollBar::sub-page:vertical
 {
@@ -1275,29 +1275,29 @@ QScrollBar:left-arrow:horizontal
 {
     width: 8px;
     height: 8px;
-    border-image: url(:/image/left-arrow.png);
+    border-image: url(:/images/left-arrow.png);
 }
 QScrollBar:left-arrow:horizontal:hover
 {
-    border-image: url(:/image/left-arrow_hover.png);
+    border-image: url(:/images/left-arrow_hover.png);
 }
 QScrollBar:left-arrow:horizontal:pressed
 {
-    border-image: url(:/image/left-arrow_hover.png);
+    border-image: url(:/images/left-arrow_hover.png);
 }
 QScrollBar::right-arrow:horizontal
 {
     width: 8px;
     height: 8px;
-    border-image: url(:/image/right-arrow.png);
+    border-image: url(:/images/right-arrow.png);
 }
 QScrollBar::right-arrow:horizontal:hover
 {
-    border-image: url(:/image/right-arrow_hover.png);
+    border-image: url(:/images/right-arrow_hover.png);
 }
 QScrollBar::right-arrow:horizontal:pressed
 {
-    border-image: url(:/image/right-arrow_hover.png);
+    border-image: url(:/images/right-arrow_hover.png);
 }
 QScrollBar::add-page:horizontal, QScrollBar::sub-page:horizontal
 {

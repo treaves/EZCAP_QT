@@ -65,7 +65,8 @@ option(ENABLE_TESTING "Enable Test Builds" ON)
 
 # ######################################################################################################################
 # ##########                                           Dependencies                                           ##########
-set(CMAKE_MODULE_PATH ${PROJECT_SOURCE_DIR}/CMakeModules)
+list(APPEND CMAKE_MODULE_PATH ${PROJECT_SOURCE_DIR}/CMakeModules /usr/local/cmake_modules)
+
 find_package(
   Qt5 5.8
   COMPONENTS Core
@@ -83,7 +84,13 @@ if(WIN32)
   )
 endif()
 
-find_package(LibUSB REQUIRED)
+get_cmake_property(_variableNames VARIABLES)
+list (SORT _variableNames)
+foreach (_variableName ${_variableNames})
+    message(STATUS "${_variableName}=${${_variableName}}")
+endforeach()
+
+find_package(USB-1 REQUIRED)
 find_package(CFITSIO REQUIRED)
 find_package(OpenCV REQUIRED)
 

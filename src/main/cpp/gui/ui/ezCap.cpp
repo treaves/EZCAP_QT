@@ -26,12 +26,7 @@
 //20200220 lyl Add ReadMode Dialog
 #include "readmode.hpp"
 #include "ui_readmode.h"
-
-//#include "qhyccdStatus.hpp"
 #include "dllqhyccd.hpp"
-
-#include "qthread.hpp"
-
 #include <QImage>
 #include <qfiledialog.h>
 #include <QPainter>
@@ -43,6 +38,9 @@
 #include <QMenu>
 #include <QDesktopServices>
 #include <QException>
+#include <opencv2/core/core_c.h>
+#include <opencv2/highgui.hpp>
+#include <opencv2/imgproc/imgproc_c.h>
 
 EZCAP *mainWidget;
 const bool EZCAP::TESTED_PID = false;
