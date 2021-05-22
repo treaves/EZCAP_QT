@@ -2,11 +2,11 @@
 #include "ui_readmode.h"
 #include "ezCap.hpp"
 //#include "qhyccdStatus.hpp"
-#include "dllqhyccd.hpp"
+
 #include <QDebug>
 #include <QListView>
 extern struct IX ix;
-extern qhyccd_handle *camhandle;
+extern qhyccd_handle * camera;
 ReadMode *readMode;
 
 ReadMode::ReadMode(QWidget *parent) :
@@ -56,19 +56,19 @@ void ReadMode::on_okpBtn_readmode_clicked()
     //qDebug()<<"ReadMode::ok  pBtn  clicked()";
     unsigned int ret;
     ui->comboBox_readmode->setDisabled(true);
-    ret = libqhyccd->SetQHYCCDReadMode(camhandle, ix.currentReadMode);
-    //ret = SetQHYCCDReadMode(camhandle, ix.currentReadMode);
+    ret = SetQHYCCDReadMode(camera, ix.currentReadMode);
+    //ret = SetQHYCCDReadMode(camera, ix.currentReadMode);
     if(ret != QHYCCD_SUCCESS)
         qCritical("SetQHYCCDReadMode: failed");
     else
         qDebug() << "SetQHYCCDReadMode success"<<ix.currentReadMode;
     /*unsigned int test,width,height;
-    ret = GetQHYCCDReadMode(camhandle, &test);
+    ret = GetQHYCCDReadMode(camera, &test);
     if(ret != QHYCCD_SUCCESS)
         qCritical("GetQHYCCDStreamMode: failed");
     else
         qDebug() << "GetQHYCCDStreamMode success"<<test;
-    ret=GetQHYCCDReadModeResolution(camhandle,test,&width, &height);
+    ret=GetQHYCCDReadModeResolution(camera,test,&width, &height);
     if(ret != QHYCCD_SUCCESS)
         qCritical("GetQHYCCDReadModeResolution: failed");
     else

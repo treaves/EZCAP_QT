@@ -7,6 +7,6 @@ set(RESOURCES "${RESOURCES_DIRECTORY}/resources.qrc")
 
 # ######################################################################################################################
 # ##########                                        Add Subdirectories                                        ##########
-add_subdirectory(cpp/lib)
+#add_subdirectory(cpp/lib)
 # add_subdirectory(cpp/cli)
 add_subdirectory(cpp/gui)

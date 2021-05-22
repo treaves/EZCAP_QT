@@ -84,15 +84,10 @@ if(WIN32)
   )
 endif()
 
-get_cmake_property(_variableNames VARIABLES)
-list (SORT _variableNames)
-foreach (_variableName ${_variableNames})
-    message(STATUS "${_variableName}=${${_variableName}}")
-endforeach()
-
 find_package(USB-1 REQUIRED)
 find_package(CFITSIO REQUIRED)
 find_package(OpenCV REQUIRED)
+find_package(QHYCCD REQUIRED)
 
 # ######################################################################################################################
 # ##########                                           Qt UI & moc                                            ##########

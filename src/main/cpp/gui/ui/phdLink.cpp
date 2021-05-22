@@ -1,6 +1,6 @@
 #include "phdLink.hpp"
 #include "ui_phdLink.h"
-//#include "qhyccdStatus.hpp"
+#include <qhyccd.h>
 #include <QDebug>
 #include <QTimer>
 #include <QListView>
@@ -45,7 +45,7 @@ void PHDLink::on_pBtn_connect_clicked()
     if(!isPHDConnect)
     {
         //ret = Connect2PHD2();  //connect PHD2
-        ret = libqhyccd->Connect2PHD2();
+        ret = Connect2PHD2();
         if(ret == 0)
         {
             qDebug() << "connect phd2";
@@ -66,7 +66,7 @@ void PHDLink::on_pBtn_connect_clicked()
     else
     {
         //ret = DisConnect2PHD2();    //Dis PHD2
-        ret = libqhyccd->DisConnect2PHD2();
+        ret = DisConnect2PHD2();
         if(ret == 0)
         {
             qDebug() << "disconnect PHD2";

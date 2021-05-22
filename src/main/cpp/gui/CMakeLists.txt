@@ -20,6 +20,7 @@ set(UIS
 
 set(SOURCES
     borderLayout.cpp
+   CameraDownloadThread.cpp
     delegate.cpp
     main.cpp
     mainMenu.cpp
@@ -40,8 +41,13 @@ set(SOURCES
 
 set(HEADERS
     borderLayout.hpp
+   CameraDownloadThread.hpp
+   CyAPI.hpp
+   CyUSB30_def.hpp
     delegate.hpp
     mainMenu.hpp
+   myStruct.hpp
+   qhyccdstruct.hpp
     ui/about.hpp
     ui/cameraChooser.hpp
     ui/cfwControl.hpp
@@ -80,11 +86,11 @@ else()
   add_executable(EZCap_Qt ${HEADERS} ${SOURCES} ${UIS} ${RESOURCES})
 endif()
 
-target_include_directories(EZCap_Qt PRIVATE ${OpenCV_INCLUSE_DIRS} ${CFITSIO_INCLUDE_DIRS})
+target_include_directories(EZCap_Qt PRIVATE ${QHYCCD_INCLUDE_DIRS} ${CFITSIO_INCLUDE_DIRS} ${OpenCV_INCLUSE_DIRS})
 target_link_libraries(
   EZCap_Qt
   PUBLIC Qt5::Core Qt5::Widgets
-  PRIVATE ezcap project_warnings project_options ${OpenCV_LIBS} ${CFITSIO_LIBRARIES}
+  PRIVATE ezcap project_warnings project_options ${QHYCCD_LIBRARIES} ${CFITSIO_LIBRARIES} ${OpenCV_LIBS}
 )
 
 target_compile_features(EZCap_Qt PUBLIC cxx_nullptr cxx_lambdas)

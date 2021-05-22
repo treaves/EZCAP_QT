@@ -1,15 +1,13 @@
 #include "favorite.hpp"
 #include "ui_favorite.h"
-#include "dllqhyccd.hpp"
-
-//#include "qhyccdStatus.hpp"
 #include "myStruct.hpp"
+#include <qhyccd.h>
 
 #include <QDebug>
 #include <QException>
 
 Favorite *favorite_dialog;
-extern qhyccd_handle *camhandle;
+extern qhyccd_handle * camera;
 
 Favorite::Favorite(QWidget *parent) :
     QDialog(parent),
@@ -199,11 +197,11 @@ void Favorite::set9979Finetone()
         SHPorSHD = 1; // view SHP
     else
         SHPorSHD = 0;  // view SHD
-    libqhyccd->SetQHYCCDFineTone(camhandle, static_cast<uint8_t>(SHPorSHD),
+    SetQHYCCDFineTone(camera, static_cast<uint8_t>(SHPorSHD),
                                  static_cast<uint8_t>(finetone1),
                                  static_cast<uint8_t>(finetone2),
                                  static_cast<uint8_t>(finetone3));
-    //SetQHYCCDFineTone(camhandle, SHPorSHD, finetone1, finetone2, finetone3);
+    //SetQHYCCDFineTone(camera, SHPorSHD, finetone1, finetone2, finetone3);
     qDebug() << "set finetone" << SHPorSHD << finetone1 << finetone2 << finetone3;
 }
 
@@ -288,10 +286,10 @@ void Favorite::on_cBox_GPS_clicked(bool checked)
 void Favorite::on_comboBox_OSD_currentIndexChanged(int index)
 {
     unsigned int ret;
-    if(libqhyccd->EnableQHYCCDImageOSD){
-        ret = libqhyccd->EnableQHYCCDImageOSD(camhandle,
+    if(EnableQHYCCDImageOSD){
+        ret = EnableQHYCCDImageOSD(camera,
           static_cast<uint32_t>(
-              index));//ret = EnableQHYCCDImageOSD(camhandle,index);
+              index));//ret = EnableQHYCCDImageOSD(camera,index);
         if(ret != QHYCCD_SUCCESS)
             qCritical("EnableQHYCCDImageOSD: failed");
         else
@@ -301,8 +299,8 @@ void Favorite::on_comboBox_OSD_currentIndexChanged(int index)
     qCritical("EnableQHYCCDImageOSD: have no this function !");
     }
 //    try{
-//        //ret = EnableQHYCCDImageOSD(camhandle,index);
-//        ret = libqhyccd->EnableQHYCCDImageOSD(camhandle,index);
+//        //ret = EnableQHYCCDImageOSD(camera,index);
+//        ret = EnableQHYCCDImageOSD(camera,index);
 //        if(ret != QHYCCD_SUCCESS)
 //            qCritical("EnableQHYCCDImageOSD: failed");
 //        else

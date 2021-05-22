@@ -1,46 +1,43 @@
 #include "ezCap.hpp"
-#include "ui_ezCap.h"
-#include "mainMenu.hpp"
-#include "borderLayout.hpp"
-#include "planner.hpp"
-#include "ui_planner.h"
-#include "favorite.hpp"
-#include "ui_favorite.h"
-#include "tempControl.hpp"
-#include "ui_tempControl.h"
-#include "phdLink.hpp"
-#include "darkframetool.hpp"
-#include "ui_phdLink.h"
 #include "about.hpp"
-#include "fitHeader.hpp"
-#include "ui_fitHeader.h"
+#include "borderLayout.hpp"
 #include "cameraChooser.hpp"
-#include "ui_cameraChooser.h"
-#include "managementMenu.hpp"
-#include "ui_managementMenu.h"
-#include "downloadPreThread.hpp"
-#include "downloadCapThread.hpp"
-#include "downloadFocThread.hpp"
+#include "CameraDownloadThread.hpp"
 #include "cfwControl.hpp"
 #include "cfwSetup.hpp"
-//20200220 lyl Add ReadMode Dialog
+#include "darkframetool.hpp"
+#include "favorite.hpp"
+#include "fitHeader.hpp"
+#include "mainMenu.hpp"
+#include "managementMenu.hpp"
+#include "phdLink.hpp"
+#include "planner.hpp"
 #include "readmode.hpp"
+#include "tempControl.hpp"
+#include "ui_cameraChooser.h"
+#include "ui_ezCap.h"
+#include "ui_favorite.h"
+#include "ui_fitHeader.h"
+#include "ui_managementMenu.h"
+#include "ui_phdLink.h"
+#include "ui_planner.h"
 #include "ui_readmode.h"
-#include "dllqhyccd.hpp"
-#include <QImage>
-#include <qfiledialog.h>
-#include <QPainter>
-#include <QtCore>
-#include <QScrollArea>
-#include <QScrollBar>
-#include <QCloseEvent>
-#include <QMessageBox>
-#include <QMenu>
-#include <QDesktopServices>
-#include <QException>
+#include "ui_tempControl.h"
 #include <opencv2/core/core_c.h>
 #include <opencv2/highgui.hpp>
 #include <opencv2/imgproc/imgproc_c.h>
+#include <QCloseEvent>
+#include <QDesktopServices>
+#include <QException>
+#include <qfiledialog.h>
+#include <QImage>
+#include <QMenu>
+#include <QMessageBox>
+#include <QPainter>
+#include <QScrollArea>
+#include <QScrollBar>
+#include <QStorageInfo>
+#include <QtCore>
 
 EZCAP *mainWidget;
 const bool EZCAP::TESTED_PID = false;
@@ -51,7 +48,7 @@ struct INIFILEPARAM iniFileParams;
 
 CvFont QHYFont;
 
-qhyccd_handle *camhandle;
+qhyccd_handle *     camera;
 
 char camid[64];
 bool show_disconnect_confirm_box = true;
@@ -64,12 +61,12 @@ void EZCAP::updateWindowsTitle() {
     uint8_t camStatus = '-';
     uint32_t sdk_build_version='-';
     qDebug() << "connected" + ix.isConnected;
-    sdk_build_version = libqhyccd->GetQHYCCDSDKBuildVersion();
+    sdk_build_version = GetQHYCCDSDKBuildVersion();
     if(ix.isConnected){
         qDebug() << "====>GET SPEED";
-        superSpeed = libqhyccd->GetCameraIsSuperSpeedFromID(camid);
+        superSpeed = GetCameraIsSuperSpeedFromID(camid);
         superSpeed = superSpeed + 2 +48;//48=0(ascii code) In SDK 0=usb2.0 1=usb3.0 , so speed+=2
-        camStatus = libqhyccd->GetCameraStatusFromID(camid)+48;//48=0(ascii code)
+        camStatus = GetCameraStatusFromID(camid)+48;//48=0(ascii code)
     }else{
         ix.CamID = "-";
         ix.FPGAVer = "-";
@@ -159,7 +156,6 @@ EZCAP::EZCAP(QWidget *parent) :
     RELEASE_TIME = EZCAP_VER + QStringLiteral("   ") + QStringLiteral(__TIME__);
 
     ui->setupUi(this);
-    libqhyccd =new dllqhyccd();
     //---------------------create the sub-window dialog class---------------------------------------------------
     about_dialog = new About(this,EZCAP_VER,RELEASE_TIME);//pass the version info when create the dialog
     favorite_dialog = new Favorite(this);
@@ -636,16 +632,16 @@ EZCAP::EZCAP(QWidget *parent) :
         return;
     }
     qDebug() << "regist event pnp_Event_In_Func";
-    libqhyccd->RegisterPnpEventOut(pnp_Event_Out_Func);
-    libqhyccd->RegisterPnpEventIn(pnp_Event_In_Func);
+    RegisterPnpEventOut(pnp_Event_Out_Func);
+    RegisterPnpEventIn(pnp_Event_In_Func);
     qDebug() << "regist event pnp_Event_Out_Func";
     qDebug() << "regist event data_Event_Single_Func";
-    libqhyccd->RegisterDataEventSingle(data_Event_Single_Func);
+    RegisterDataEventSingle(data_Event_Single_Func);
     qDebug() << "regist event data_Event_Live_Func";
-    libqhyccd->RegisterDataEventLive(data_Event_Live_Func);
+    RegisterDataEventLive(data_Event_Live_Func);
     qDebug() << "regist event end.";
-    libqhyccd->RegisterPnpEvent(pnpEventExFunc);
-    libqhyccd->RegisterTransferEventError(transferEventErrorFunc);
+    RegisterPnpEvent(pnpEventExFunc);
+    RegisterTransferEventError(transferEventErrorFunc);
     updateWindowsTitle();
     ui->plainTextEdit_debug->hide();
 }
@@ -653,11 +649,6 @@ EZCAP::EZCAP(QWidget *parent) :
 
 EZCAP::~EZCAP()
 {
-    if(libqhyccd)
-    {
-        delete libqhyccd;
-         libqhyccd=NULL;
-    }
     if(mainMenuBar)
     {
         delete mainMenuBar;
@@ -837,7 +828,7 @@ bool EZCAP::getParamsFromCamera()
     unsigned int ret;
     unsigned char buf[32];
     double max,min,step;
-    ret = libqhyccd->GetQHYCCDFWVersion(camhandle,buf); //ret = GetQHYCCDFWVersion(camhandle,buf);
+    ret = GetQHYCCDFWVersion(camera,buf); //ret = GetQHYCCDFWVersion(camera,buf);
     if(ret == QHYCCD_ERROR)
     {
         ix.driverVer = "-";
@@ -852,9 +843,9 @@ bool EZCAP::getParamsFromCamera()
             ix.driverVer = QString::number(year,10) + "-" + QString::number((buf[0]&~0xf0),10) + "-" + QString::number(buf[1], 10);
     }
     //20200303lyl FPGAVersion
-    if(libqhyccd->GetQHYCCDFPGAVersion)
+    if(GetQHYCCDFPGAVersion)
     {
-        ret=libqhyccd->GetQHYCCDFPGAVersion(camhandle,0,buf);//ret = GetQHYCCDFPGAVersion(camhandle,0,buf);
+        ret=GetQHYCCDFPGAVersion(camera,0,buf);//ret = GetQHYCCDFPGAVersion(camera,0,buf);
         if(ret == QHYCCD_ERROR)
         {
             ix.FPGAVer= "-";
@@ -863,7 +854,8 @@ bool EZCAP::getParamsFromCamera()
         {
             ix.FPGAVer = QString::number(buf[0],10)+ "-" + QString::number(buf[1],10)+ "-" + QString::number(buf[2],10) + "-" + QString::number(buf[3],10);
         }
-        ret=libqhyccd->GetQHYCCDFPGAVersion(camhandle,1,buf);//ret = GetQHYCCDFPGAVersion(camhandle,1,buf);//获得第二个FPGAversion
+        ret=GetQHYCCDFPGAVersion(
+          camera,1,buf);//ret = GetQHYCCDFPGAVersion(camera,1,buf);//获得第二个FPGAversion
         if(ret == QHYCCD_ERROR)
         {
             ix.FPGAVer1= "-";
@@ -878,7 +870,7 @@ bool EZCAP::getParamsFromCamera()
     }
 //    try
 //    {
-//        ret=libqhyccd->GetQHYCCDFPGAVersion(camhandle,0,buf);//ret = GetQHYCCDFPGAVersion(camhandle,0,buf);
+//        ret=GetQHYCCDFPGAVersion(camera,0,buf);//ret = GetQHYCCDFPGAVersion(camera,0,buf);
 //        if(ret == QHYCCD_ERROR)
 //        {
 //            ix.FPGAVer= "Unknown";
@@ -887,7 +879,7 @@ bool EZCAP::getParamsFromCamera()
 //        {
 //            ix.FPGAVer = QString::number(buf[0],10)+ "-" + QString::number(buf[1],10)+ "-" + QString::number(buf[2],10) + "-" + QString::number(buf[3],10);
 //        }
-//        ret=libqhyccd->GetQHYCCDFPGAVersion(camhandle,1,buf);//ret = GetQHYCCDFPGAVersion(camhandle,1,buf);//获得第二个FPGAversion
+//        ret=GetQHYCCDFPGAVersion(camera,1,buf);//ret = GetQHYCCDFPGAVersion(camera,1,buf);//获得第二个FPGAversion
 //        if(ret == QHYCCD_ERROR)
 //        {
 //            ix.FPGAVer1= "Unknown";
@@ -900,7 +892,8 @@ bool EZCAP::getParamsFromCamera()
 //    catch (QException e) {//QString exception
 //        qCritical("GetQHYCCDFPGAVersion: have no this function !");
 //    }
-    ret = libqhyccd->GetQHYCCDChipInfo(camhandle, &ix.ccdChipW, &ix.ccdChipH, &ix.ccdMaxImgW, &ix.ccdMaxImgH, &ix.ccdPixelW, &ix.ccdPixelH, &ix.bits);//ret = GetQHYCCDChipInfo(camhandle, &ix.ccdChipW, &ix.ccdChipH, &ix.ccdMaxImgW, &ix.ccdMaxImgH, &ix.ccdPixelW, &ix.ccdPixelH, &ix.bits);
+    ret = GetQHYCCDChipInfo(
+      camera, &ix.ccdChipW, &ix.ccdChipH, &ix.ccdMaxImgW, &ix.ccdMaxImgH, &ix.ccdPixelW, &ix.ccdPixelH, &ix.bits);//ret = GetQHYCCDChipInfo(camera, &ix.ccdChipW, &ix.ccdChipH, &ix.ccdMaxImgW, &ix.ccdMaxImgH, &ix.ccdPixelW, &ix.ccdPixelH, &ix.bits);
     if(ret == QHYCCD_SUCCESS)
     {
         qDebug() << "EZCAP   GetQHYCCDChipInfo: ccd image size " << ix.ccdMaxImgW << ix.ccdMaxImgH << ix.ccdPixelW << ix.ccdPixelH;
@@ -910,7 +903,7 @@ bool EZCAP::getParamsFromCamera()
         qCritical("GetQHYCCDChipInfo: failed");
     }
     //---can support color setting
-    ret = libqhyccd->IsQHYCCDControlAvailable(camhandle,CAM_COLOR); //ret = IsQHYCCDControlAvailable(camhandle,CAM_COLOR);
+    ret = IsQHYCCDControlAvailable(camera,CAM_COLOR); //ret = IsQHYCCDControlAvailable(camera,CAM_COLOR);
     if(ret == QHYCCD_ERROR)
     {
         ix.canColor = false;
@@ -922,7 +915,8 @@ bool EZCAP::getParamsFromCamera()
     }
     qDebug() << "EZCAP   IsQHYCCDControlAvailable CAM_COLOR" << ix.canColor;
     //---check can set offset setting or not
-    ret = libqhyccd->IsQHYCCDControlAvailable(camhandle,CONTROL_OFFSET);//ret = IsQHYCCDControlAvailable(camhandle,CONTROL_OFFSET);
+    ret = IsQHYCCDControlAvailable(
+      camera,CONTROL_OFFSET);//ret = IsQHYCCDControlAvailable(camera,CONTROL_OFFSET);
     if(ret == QHYCCD_SUCCESS)
         ix.canOffset = true;
     else
@@ -931,7 +925,8 @@ bool EZCAP::getParamsFromCamera()
     if(ix.canOffset)
     {
         qDebug() << "EZCAP   IsQHYCCDControlAvailable CONTROL_OFFSET";  //<< min<<max<<step;
-        ret = libqhyccd->GetQHYCCDParamMinMaxStep(camhandle,CONTROL_OFFSET,&min,&max,&step);//ret = GetQHYCCDParamMinMaxStep(camhandle,CONTROL_OFFSET,&min,&max,&step);
+        ret = GetQHYCCDParamMinMaxStep(
+          camera,CONTROL_OFFSET,&min,&max,&step);//ret = GetQHYCCDParamMinMaxStep(camera,CONTROL_OFFSET,&min,&max,&step);
         qDebug() << "EZCAP   IsQHYCCDControlAvailable CONTROL_OFFSET";  // << min<<max<<step;
         if(ret == QHYCCD_SUCCESS)
         {//qDebug() << "EZCAP   IsQHYCCDControlAvailable CONTROL_OFFSET" << min<<max<<step;
@@ -945,13 +940,14 @@ bool EZCAP::getParamsFromCamera()
         }
         else
         {
-            ix.offset = libqhyccd->GetQHYCCDParam(camhandle, CONTROL_OFFSET);    //ix.offset = GetQHYCCDParam(camhandle, CONTROL_OFFSET);
+            ix.offset = GetQHYCCDParam(
+             camera, CONTROL_OFFSET);    //ix.offset = GetQHYCCDParam(camera, CONTROL_OFFSET);
             qDebug() << "EZCAP   GetQHYCCDParam CONTROL_OFFSET" << ix.offset;
         }
     }
 
     //---can support gain or not
-    ret = libqhyccd->IsQHYCCDControlAvailable(camhandle,CONTROL_GAIN); //ret = IsQHYCCDControlAvailable(camhandle,CONTROL_GAIN);
+    ret = IsQHYCCDControlAvailable(camera,CONTROL_GAIN); //ret = IsQHYCCDControlAvailable(camera,CONTROL_GAIN);
     if(ret == QHYCCD_SUCCESS)
         ix.canGain = true;
     else
@@ -960,7 +956,8 @@ bool EZCAP::getParamsFromCamera()
     //check gain range
     if(ix.canGain)
     {
-        ret = libqhyccd->GetQHYCCDParamMinMaxStep(camhandle,CONTROL_GAIN,&min,&max,&step); //ret = GetQHYCCDParamMinMaxStep(camhandle,CONTROL_GAIN,&min,&max,&step);
+        ret = GetQHYCCDParamMinMaxStep(
+         camera,CONTROL_GAIN,&min,&max,&step); //ret = GetQHYCCDParamMinMaxStep(camera,CONTROL_GAIN,&min,&max,&step);
         if(ret == QHYCCD_SUCCESS)
         {
             ix.gainMax = max;
@@ -973,12 +970,13 @@ bool EZCAP::getParamsFromCamera()
         }
         else
         {
-            ix.gain = libqhyccd->GetQHYCCDParam(camhandle, CONTROL_GAIN);   //ix.gain = GetQHYCCDParam(camhandle, CONTROL_GAIN);
+            ix.gain = GetQHYCCDParam(camera, CONTROL_GAIN);   //ix.gain = GetQHYCCDParam(camera, CONTROL_GAIN);
             qDebug() << "EZCAP   GetQHYCCDParam CONTROL_GAIN" << ix.gain;
         }
     }
     //---can support binning mode
-    ret =libqhyccd->IsQHYCCDControlAvailable(camhandle,CAM_BIN1X1MODE); //ret = IsQHYCCDControlAvailable(camhandle,CAM_BIN1X1MODE);
+    ret =IsQHYCCDControlAvailable(
+      camera,CAM_BIN1X1MODE); //ret = IsQHYCCDControlAvailable(camera,CAM_BIN1X1MODE);
     if(ret == QHYCCD_SUCCESS)
     {
         ix.canbin11 = true;
@@ -989,7 +987,8 @@ bool EZCAP::getParamsFromCamera()
     {
         ix.canbin11 = false;
     }
-    ret = libqhyccd->IsQHYCCDControlAvailable(camhandle,CAM_BIN2X2MODE); //ret = IsQHYCCDControlAvailable(camhandle,CAM_BIN2X2MODE);
+    ret = IsQHYCCDControlAvailable(
+      camera,CAM_BIN2X2MODE); //ret = IsQHYCCDControlAvailable(camera,CAM_BIN2X2MODE);
     if(ret == QHYCCD_SUCCESS)
     {
         ix.canbin22 = true;
@@ -1000,7 +999,8 @@ bool EZCAP::getParamsFromCamera()
     {
         ix.canbin22 = false;
     }
-    ret =libqhyccd->IsQHYCCDControlAvailable(camhandle,CAM_BIN3X3MODE);  //ret = IsQHYCCDControlAvailable(camhandle,CAM_BIN3X3MODE);
+    ret =IsQHYCCDControlAvailable(
+      camera,CAM_BIN3X3MODE);  //ret = IsQHYCCDControlAvailable(camera,CAM_BIN3X3MODE);
     if(ret == QHYCCD_SUCCESS)
     {
         ix.canbin33 = true;
@@ -1011,7 +1011,8 @@ bool EZCAP::getParamsFromCamera()
     {
         ix.canbin33 = false;
     }
-    ret =libqhyccd->IsQHYCCDControlAvailable(camhandle,CAM_BIN4X4MODE);   //ret = IsQHYCCDControlAvailable(camhandle,CAM_BIN4X4MODE);
+    ret =IsQHYCCDControlAvailable(
+      camera,CAM_BIN4X4MODE);   //ret = IsQHYCCDControlAvailable(camera,CAM_BIN4X4MODE);
     if(ret == QHYCCD_SUCCESS)
     {
         ix.canbin44 = true;
@@ -1029,7 +1030,8 @@ bool EZCAP::getParamsFromCamera()
     qDebug() << "Camera Maximum Binning" << ix.maxBinx << ix.maxBiny;
 
     //---can support highspeed setting
-    ret =libqhyccd-> IsQHYCCDControlAvailable(camhandle,CONTROL_SPEED); //ret = IsQHYCCDControlAvailable(camhandle,CONTROL_SPEED);
+    ret = IsQHYCCDControlAvailable(
+      camera,CONTROL_SPEED); //ret = IsQHYCCDControlAvailable(camera,CONTROL_SPEED);
     if(ret == QHYCCD_SUCCESS)
         ix.canHighSpeed = true;
     else
@@ -1037,7 +1039,8 @@ bool EZCAP::getParamsFromCamera()
     qDebug() << "IsQHYCCDControlAvailable CONTROL_SPEED" << ix.canHighSpeed;
 
     //---can support usbtraffic
-    ret = libqhyccd->IsQHYCCDControlAvailable(camhandle, CONTROL_USBTRAFFIC);   //ret = IsQHYCCDControlAvailable(camhandle, CONTROL_USBTRAFFIC);
+    ret = IsQHYCCDControlAvailable(
+      camera, CONTROL_USBTRAFFIC);   //ret = IsQHYCCDControlAvailable(camera, CONTROL_USBTRAFFIC);
     if(ret == QHYCCD_SUCCESS)
         ix.canUsbtraffic = true;
     else
@@ -1046,21 +1049,22 @@ bool EZCAP::getParamsFromCamera()
     //check usbtraffic range
     if(ix.canUsbtraffic)
     {
-        ret =libqhyccd-> GetQHYCCDParamMinMaxStep(camhandle,CONTROL_USBTRAFFIC,&min,&max,&step);  //ret = GetQHYCCDParamMinMaxStep(camhandle,CONTROL_USBTRAFFIC,&min,&max,&step);
+        ret = GetQHYCCDParamMinMaxStep(
+         camera,CONTROL_USBTRAFFIC,&min,&max,&step);  //ret = GetQHYCCDParamMinMaxStep(camera,CONTROL_USBTRAFFIC,&min,&max,&step);
         if(ret == QHYCCD_SUCCESS)
         {
             ix.usbtrafficMax = max;
             ix.usbtrafficMin = min;
             ix.usbtrafficStep = step;
-            ix.usbtraffic = libqhyccd->GetQHYCCDParam(camhandle, CONTROL_USBTRAFFIC);
-            //ix.usbtraffic = GetQHYCCDParam(camhandle, CONTROL_USBTRAFFIC);
+            ix.usbtraffic = GetQHYCCDParam(camera, CONTROL_USBTRAFFIC);
+            //ix.usbtraffic = GetQHYCCDParam(camera, CONTROL_USBTRAFFIC);
             qDebug() << "GetQHYCCDParam CONTROL_USBTRAFFIC" << ix.usbtraffic;
         }
     }
     //---can support GPS  20200512lyl
     try{
-        ret = libqhyccd->IsQHYCCDControlAvailable(camhandle, CAM_GPS);
-        //ret = IsQHYCCDControlAvailable(camhandle, CAM_GPS);
+        ret = IsQHYCCDControlAvailable(camera, CAM_GPS);
+        //ret = IsQHYCCDControlAvailable(camera, CAM_GPS);
         if(ret == QHYCCD_SUCCESS)
             ix.canGPS = true;
         else
@@ -1081,12 +1085,12 @@ bool EZCAP::getParamsFromCamera()
         favorite_dialog->ui->comboBox_OSD->addItems(ix.OSDList);
     }
     //----set transferbit------
-    ret = libqhyccd->IsQHYCCDControlAvailable(camhandle, CONTROL_TRANSFERBIT);
-    //ret = IsQHYCCDControlAvailable(camhandle, CONTROL_TRANSFERBIT);
+    ret = IsQHYCCDControlAvailable(camera, CONTROL_TRANSFERBIT);
+    //ret = IsQHYCCDControlAvailable(camera, CONTROL_TRANSFERBIT);
     if(ret == QHYCCD_SUCCESS)
     {
-        ret = libqhyccd->IsQHYCCDControlAvailable(camhandle, CAM_16BITS);
-        //ret = IsQHYCCDControlAvailable(camhandle, CAM_16BITS);
+        ret = IsQHYCCDControlAvailable(camera, CAM_16BITS);
+        //ret = IsQHYCCDControlAvailable(camera, CAM_16BITS);
         if(ret == QHYCCD_SUCCESS)
         {
             ix.can16Bits = true;
@@ -1098,8 +1102,8 @@ bool EZCAP::getParamsFromCamera()
             ix.bits = 8;
         }
         qDebug() << "IsQHYCCDControlAvailable CAM_16BITS" << ix.can16Bits;
-        ret = libqhyccd->SetQHYCCDParam(camhandle, CONTROL_TRANSFERBIT, ix.bits);
-        //ret = SetQHYCCDParam(camhandle, CONTROL_TRANSFERBIT, ix.bits);
+        ret = SetQHYCCDParam(camera, CONTROL_TRANSFERBIT, ix.bits);
+        //ret = SetQHYCCDParam(camera, CONTROL_TRANSFERBIT, ix.bits);
         if(ret == QHYCCD_SUCCESS)
         {
             ix.lastBits = ix.bits;
@@ -1108,8 +1112,8 @@ bool EZCAP::getParamsFromCamera()
     }
 
     //---can support cfw control
-    ret =libqhyccd-> IsQHYCCDControlAvailable(camhandle,CONTROL_CFWPORT);
-    //ret = IsQHYCCDControlAvailable(camhandle,CONTROL_CFWPORT);
+    ret = IsQHYCCDControlAvailable(camera,CONTROL_CFWPORT);
+    //ret = IsQHYCCDControlAvailable(camera,CONTROL_CFWPORT);
     if(ret == QHYCCD_SUCCESS)
         ix.canFilterWheel = true;
     else
@@ -1120,8 +1124,8 @@ bool EZCAP::getParamsFromCamera()
         if(!iniFileParams.iniFileExist)
         {
             //if inifile does not exist...
-            ret = libqhyccd->GetQHYCCDParam(camhandle, CONTROL_CFWSLOTSNUM);
-            //ret = GetQHYCCDParam(camhandle, CONTROL_CFWSLOTSNUM);
+            ret = GetQHYCCDParam(camera, CONTROL_CFWSLOTSNUM);
+            //ret = GetQHYCCDParam(camera, CONTROL_CFWSLOTSNUM);
             if(ret == QHYCCD_ERROR)
                 iniFileParams.CFWSlotsNum = 9;
             else
@@ -1146,8 +1150,8 @@ bool EZCAP::getParamsFromCamera()
     }
 
     //---can support cooler
-    ret = libqhyccd->IsQHYCCDControlAvailable(camhandle,CONTROL_COOLER);
-    //ret = IsQHYCCDControlAvailable(camhandle,CONTROL_COOLER);
+    ret = IsQHYCCDControlAvailable(camera,CONTROL_COOLER);
+    //ret = IsQHYCCDControlAvailable(camera,CONTROL_COOLER);
     if(ret == QHYCCD_SUCCESS)
         ix.canCooler = true;
     else
@@ -1155,8 +1159,8 @@ bool EZCAP::getParamsFromCamera()
     qDebug() << "IsQHYCCDControlAvailable CONTROL_COOLER" << ix.canCooler;
 
     //---can support humidity 20200318
-    ret = libqhyccd->IsQHYCCDControlAvailable(camhandle,CAM_HUMIDITY);
-    //ret = IsQHYCCDControlAvailable(camhandle,CAM_HUMIDITY);
+    ret = IsQHYCCDControlAvailable(camera,CAM_HUMIDITY);
+    //ret = IsQHYCCDControlAvailable(camera,CAM_HUMIDITY);
     if(ret == QHYCCD_SUCCESS)
         ix.canHumidity = true;
     else
@@ -1164,8 +1168,8 @@ bool EZCAP::getParamsFromCamera()
     qDebug() << "IsQHYCCDControlAvailable CAM_HUMIDITY" << ix.canHumidity;
 
     //---can support pressure 20200318
-    ret = libqhyccd->IsQHYCCDControlAvailable(camhandle,CAM_PRESSURE);
-    //ret = IsQHYCCDControlAvailable(camhandle,CAM_PRESSURE);
+    ret = IsQHYCCDControlAvailable(camera,CAM_PRESSURE);
+    //ret = IsQHYCCDControlAvailable(camera,CAM_PRESSURE);
     if(ret == QHYCCD_SUCCESS)
         ix.canPressure = true;
     else
@@ -1173,8 +1177,8 @@ bool EZCAP::getParamsFromCamera()
     qDebug() << "IsQHYCCDControlAvailable CAM_PRESSURE" << ix.canPressure;
 
     //---mechanical shutter
-    ret = libqhyccd->IsQHYCCDControlAvailable(camhandle, CAM_MECHANICALSHUTTER);
-    //ret = IsQHYCCDControlAvailable(camhandle, CAM_MECHANICALSHUTTER);
+    ret = IsQHYCCDControlAvailable(camera, CAM_MECHANICALSHUTTER);
+    //ret = IsQHYCCDControlAvailable(camera, CAM_MECHANICALSHUTTER);
     if(ret == QHYCCD_SUCCESS)
         ix.canMechanicalShutter = true;
     else
@@ -1182,8 +1186,8 @@ bool EZCAP::getParamsFromCamera()
     qDebug() << "IsQHYCCDControlAvailable CAM_MECHANICALSHUTTER" << ix.canMechanicalShutter;
 
     //---trigger
-    ret = libqhyccd->IsQHYCCDControlAvailable(camhandle,CAM_TRIGER_INTERFACE);
-    //ret = IsQHYCCDControlAvailable(camhandle,CAM_TRIGER_INTERFACE);
+    ret = IsQHYCCDControlAvailable(camera,CAM_TRIGER_INTERFACE);
+    //ret = IsQHYCCDControlAvailable(camera,CAM_TRIGER_INTERFACE);
     if(ret == QHYCCD_SUCCESS)
         ix.canTriger = true;
     else
@@ -1191,8 +1195,8 @@ bool EZCAP::getParamsFromCamera()
     qDebug() << "IsQHYCCDControlAvailable CAM_TRIGER_INTERFACE" << ix.canTriger;
 
     //---fineTone
-    ret = libqhyccd->IsQHYCCDControlAvailable(camhandle,CAM_FINETONE_INTERFACE);
-    //ret = IsQHYCCDControlAvailable(camhandle,CAM_FINETONE_INTERFACE);
+    ret = IsQHYCCDControlAvailable(camera,CAM_FINETONE_INTERFACE);
+    //ret = IsQHYCCDControlAvailable(camera,CAM_FINETONE_INTERFACE);
     if(ret == QHYCCD_SUCCESS)
         ix.canFineTone = true;
     else
@@ -1200,8 +1204,8 @@ bool EZCAP::getParamsFromCamera()
     qDebug() << "IsQHYCCDControlAvailable CAM_FINETONE_INTERFACE" << ix.canFineTone;
 
     //---motor heating
-    ret = libqhyccd->IsQHYCCDControlAvailable(camhandle,CAM_SHUTTERMOTORHEATING_INTERFACE);
-    //ret = IsQHYCCDControlAvailable(camhandle,CAM_SHUTTERMOTORHEATING_INTERFACE);
+    ret = IsQHYCCDControlAvailable(camera,CAM_SHUTTERMOTORHEATING_INTERFACE);
+    //ret = IsQHYCCDControlAvailable(camera,CAM_SHUTTERMOTORHEATING_INTERFACE);
     if(ret == QHYCCD_SUCCESS)
         ix.canMotorHeating = true;
     else
@@ -1209,8 +1213,8 @@ bool EZCAP::getParamsFromCamera()
     qDebug() << "IsQHYCCDControlAvailable CAM_SHUTTERMOTORHEATING_INTERFACE" << ix.canMotorHeating;
 
     //---TEC Over protect
-    ret = libqhyccd->IsQHYCCDControlAvailable(camhandle,CAM_TECOVERPROTECT_INTERFACE);
-    //ret = IsQHYCCDControlAvailable(camhandle,CAM_TECOVERPROTECT_INTERFACE);
+    ret = IsQHYCCDControlAvailable(camera,CAM_TECOVERPROTECT_INTERFACE);
+    //ret = IsQHYCCDControlAvailable(camera,CAM_TECOVERPROTECT_INTERFACE);
     if(ret == QHYCCD_SUCCESS)
         ix.canTecOverProtect = true;
     else
@@ -1222,8 +1226,8 @@ bool EZCAP::getParamsFromCamera()
     }
 
     //---Clamp
-    ret = libqhyccd->IsQHYCCDControlAvailable(camhandle,CAM_SINGNALCLAMP_INTERFACE);
-    //ret = IsQHYCCDControlAvailable(camhandle,CAM_SINGNALCLAMP_INTERFACE);
+    ret = IsQHYCCDControlAvailable(camera,CAM_SINGNALCLAMP_INTERFACE);
+    //ret = IsQHYCCDControlAvailable(camera,CAM_SINGNALCLAMP_INTERFACE);
     if(ret == QHYCCD_SUCCESS)
         ix.canSignalClamp = true;
     else
@@ -1235,8 +1239,8 @@ bool EZCAP::getParamsFromCamera()
     }
 
     //---calibrate FPN
-    ret = libqhyccd->IsQHYCCDControlAvailable(camhandle,CAM_CALIBRATEFPN_INTERFACE);
-    //ret = IsQHYCCDControlAvailable(camhandle,CAM_CALIBRATEFPN_INTERFACE);
+    ret = IsQHYCCDControlAvailable(camera,CAM_CALIBRATEFPN_INTERFACE);
+    //ret = IsQHYCCDControlAvailable(camera,CAM_CALIBRATEFPN_INTERFACE);
     if(ret == QHYCCD_SUCCESS)
         ix.canCalibrateFPN = true;
     else
@@ -1244,8 +1248,8 @@ bool EZCAP::getParamsFromCamera()
     qDebug() << "IsQHYCCDControlAvailable CAM_CALIBRATEFPN_INTERFACE" << ix.canCalibrateFPN;
 
     //---chip temperature
-    ret = libqhyccd->IsQHYCCDControlAvailable(camhandle,CAM_CHIPTEMPERATURESENSOR_INTERFACE);
-    //ret = IsQHYCCDControlAvailable(camhandle,CAM_CHIPTEMPERATURESENSOR_INTERFACE);
+    ret = IsQHYCCDControlAvailable(camera,CAM_CHIPTEMPERATURESENSOR_INTERFACE);
+    //ret = IsQHYCCDControlAvailable(camera,CAM_CHIPTEMPERATURESENSOR_INTERFACE);
     if(ret == QHYCCD_SUCCESS)
         ix.canChipTemp = true;
     else
@@ -1253,8 +1257,8 @@ bool EZCAP::getParamsFromCamera()
     qDebug() << "IsQHYCCDControlAvailable CAM_CHIPTEMPERATURESENSOR_INTERFACE" << ix.canChipTemp;
 
     //---slowest download
-    ret = libqhyccd->IsQHYCCDControlAvailable(camhandle,CAM_USBREADOUTSLOWEST_INTERFACE);
-    //ret = IsQHYCCDControlAvailable(camhandle,CAM_USBREADOUTSLOWEST_INTERFACE);
+    ret = IsQHYCCDControlAvailable(camera,CAM_USBREADOUTSLOWEST_INTERFACE);
+    //ret = IsQHYCCDControlAvailable(camera,CAM_USBREADOUTSLOWEST_INTERFACE);
     if(ret == QHYCCD_SUCCESS)
         ix.canSlowestDownload = true;
     else
@@ -1265,15 +1269,15 @@ bool EZCAP::getParamsFromCamera()
         ix.slowestDowload = iniFileParams.slowestDowload;
     }
     //20201127 lyl SensorChamberCyclePUMP
-    ret = libqhyccd->IsQHYCCDControlAvailable(camhandle,CONTROL_SensorChamberCycle_PUMP);
+    ret = IsQHYCCDControlAvailable(camera,CONTROL_SensorChamberCycle_PUMP);
     if(ret == QHYCCD_SUCCESS)
         ix.canContolSensorChamberCyclePUMP = true;
     else
         ix.canContolSensorChamberCyclePUMP = false;
 
     int len = 0;
-    //len = GetQHYCCDMemLength(camhandle);//获取最大所需内存空间大小
-    len = libqhyccd->GetQHYCCDMemLength(camhandle);
+    //len = GetQHYCCDMemLength(camera);//获取最大所需内存空间大小
+    len = GetQHYCCDMemLength(camera);
     if(len <= 0)
     {
         qCritical() << "GetMaxFrameLength() returned 0";
@@ -1476,13 +1480,13 @@ void EZCAP::activeLive()
 {
     qDebug("----------- active live----");
         unsigned int ret = QHYCCD_ERROR;
-        ret = libqhyccd->BeginQHYCCDLive(camhandle);
+        ret = BeginQHYCCDLive(camera);
         qCritical("--- BeginQHYCCDLive return %d", ret);
 }
 void EZCAP::switchDebug()
 {
     qDebug("----------- switch Debug ----");
-    libqhyccd->EnableQHYCCDMessage(mainMenuBar->actDebug->isChecked());
+    EnableQHYCCDMessage(mainMenuBar->actDebug->isChecked());
     ui->plainTextEdit_debug->setVisible(mainMenuBar->actDebug->isChecked());
     ui->plainTextEdit_debug->appendPlainText("debug changed ");
 }
@@ -1724,12 +1728,12 @@ void EZCAP::closeEvent( QCloseEvent * event )
             ix.plannerState = PlannerStatus_Stop;
         }
 
-        if(camhandle)
+        if(camera)
         {
             if(ix.cameraState != Camera_Idle)
             {
-                //ret = CancelQHYCCDExposingAndReadout(camhandle);//停止曝光
-                ret = libqhyccd->CancelQHYCCDExposingAndReadout(camhandle);
+                //ret = CancelQHYCCDExposingAndReadout(camera);//停止曝光
+                ret = CancelQHYCCDExposingAndReadout(camera);
                 if(ret != QHYCCD_SUCCESS)
                     qCritical("CancelQHYCCDExposingAndReadout: failed");
                 else
@@ -1739,14 +1743,14 @@ void EZCAP::closeEvent( QCloseEvent * event )
             ix.onLiveMode = false;  //stop the exist PreviewLive/FocusLive
             ix.cameraState = Camera_Idle;
 
-            ret = libqhyccd->CloseQHYCCD(camhandle);
-            //ret = CloseQHYCCD(camhandle);
+            ret = CloseQHYCCD(camera);
+            //ret = CloseQHYCCD(camera);
             if(ret != QHYCCD_SUCCESS)
                 qCritical("CloseQHYCCD: failed");
             else
                 qDebug() <<"CloseQHYCCD success";
         }
-        ret = libqhyccd->ReleaseQHYCCDResource();
+        ret = ReleaseQHYCCDResource();
         //ret = ReleaseQHYCCDResource();
         if(ret != QHYCCD_SUCCESS)
             qCritical("ReleaseQHYCCDResource: failed");
@@ -1836,12 +1840,12 @@ void EZCAP::showCameraChooser()
             }
 
             //camera has connected
-            if(camhandle)
+            if(camera)
             {
                 if(ix.cameraState != Camera_Idle)
                 {
-                    //ret = CancelQHYCCDExposingAndReadout(camhandle);
-                    ret = libqhyccd->CancelQHYCCDExposingAndReadout(camhandle);
+                    //ret = CancelQHYCCDExposingAndReadout(camera);
+                    ret = CancelQHYCCDExposingAndReadout(camera);
                     if(ret == QHYCCD_SUCCESS)
                         qDebug("CancelQHYCCDExposingAndReadout success!");
                     else
@@ -1856,15 +1860,15 @@ void EZCAP::showCameraChooser()
                 ix.ForceStop = true;  //stop exposing.
                 ix.onLiveMode = false;  //stop the exist PreviewLive/FocusLive
                 ix.cameraState = Camera_Idle;
-                ret = libqhyccd->CloseQHYCCD(camhandle);
-//                ret = CloseQHYCCD(camhandle);
+                ret = CloseQHYCCD(camera);
+//                ret = CloseQHYCCD(camera);
                 if(ret != QHYCCD_SUCCESS)
                 {
                     qCritical("CloseQHYCCD: failed");
                 }
                 else
                 {
-                    camhandle = NULL;
+                   camera = NULL;
                     qDebug() << "EZCAP  |  CloseQHYCCD success";
                 }
             }
@@ -1876,12 +1880,12 @@ void EZCAP::showCameraChooser()
     {
         devList.clear();
         //num = ScanQHYCCD();
-        num = libqhyccd->ScanQHYCCD();
+        num = ScanQHYCCD();
         if(num > 0)
         {
             for(int i=0; i<num; i++)
             {                
-                ret = libqhyccd->GetQHYCCDId(i, camid);//ret = GetQHYCCDId(i, camid);
+                ret = GetQHYCCDId(i, camid);//ret = GetQHYCCDId(i, camid);
                 if(ret == QHYCCD_SUCCESS)
                 {
                     tempId = QString(QLatin1String(camid));
@@ -1912,8 +1916,8 @@ void EZCAP::showCameraChooser()
                 QByteArray pstr = tempId.toLatin1();
                 memset(camid,'\0',64);
                 memcpy(camid,pstr.data(),pstr.size());
-                camhandle = libqhyccd->OpenQHYCCD(camid); //camhandle = OpenQHYCCD(camid);
-                if(camhandle != NULL)
+                camera = OpenQHYCCD(camid); //camera = OpenQHYCCD(camid);
+                if(camera != NULL)
                 {
                     qDebug() << "EZCAP  OpenQHYCCD success";
                     ix.isConnected = true;
@@ -1923,15 +1927,16 @@ void EZCAP::showCameraChooser()
                     ix.ReadModeList.clear();//清空列表
 //                    try{
 //                        qDebug() << "EZCAP  GetQHYCCDNumberOfReadModes begain";
-//                        ret=libqhyccd->GetQHYCCDNumberOfReadModes(camhandle,&ix.NumberOfReadModes);       //ret=GetQHYCCDNumberOfReadModes(camhandle,&ix.NumberOfReadModes);
+//                        ret=GetQHYCCDNumberOfReadModes(camera,&ix.NumberOfReadModes);       //ret=GetQHYCCDNumberOfReadModes(camera,&ix.NumberOfReadModes);
 //                    }
 //                    catch(QException e)
 //                    {
 //                        qCritical("GetQHYCCDNumberOfReadModes: have no this function !");
 //                    }
-                    if(libqhyccd->GetQHYCCDNumberOfReadModes){
+                    if(GetQHYCCDNumberOfReadModes){
                         qDebug() << "EZCAP  GetQHYCCDNumberOfReadModes begain";
-                        ret=libqhyccd->GetQHYCCDNumberOfReadModes(camhandle,&ix.NumberOfReadModes);  //ret=GetQHYCCDNumberOfReadModes(camhandle,&ix.NumberOfReadModes);
+                        ret=GetQHYCCDNumberOfReadModes(
+                          camera,&ix.NumberOfReadModes);  //ret=GetQHYCCDNumberOfReadModes(camera,&ix.NumberOfReadModes);
                         if(iniFileParams.autoConnect){
                             qDebug() << "EZCAP  always select first mode under factory mode";
                             ix.NumberOfReadModes=1;
@@ -1940,7 +1945,7 @@ void EZCAP::showCameraChooser()
                             //Do guider test            0: EAST RA+   3: WEST RA-   1: NORTH DEC+   2: SOUTH DEC- \n
                             qDebug() << "EZCAP   Do guider test3";
                             for (int guidCount = 0; guidCount < 11; ++guidCount) {
-                                libqhyccd->ControlQHYCCDGuide(camhandle, guidCount%4, 250);
+                                ControlQHYCCDGuide(camera, guidCount%4, 250);
 //                                sleep(200);
                                 #ifdef WIN32
                                     Sleep(200);
@@ -1955,7 +1960,7 @@ void EZCAP::showCameraChooser()
                             qDebug() << "EZCAP  GetQHYCCDNumberOfReadModes:"<<ix.NumberOfReadModes;
                             for(int i=0; i<ix.NumberOfReadModes; i++)
                             {
-                                if (libqhyccd->GetQHYCCDReadModeName(camhandle, i, ix.currentReadModeName) == 0)//if (GetQHYCCDReadModeName(camhandle, i, ix.currentReadModeName) == 0)
+                                if (GetQHYCCDReadModeName(camera, i, ix.currentReadModeName) == 0)//if (GetQHYCCDReadModeName(camera, i, ix.currentReadModeName) == 0)
                                     ix.ReadModeList.append(ix.currentReadModeName);//列表填充
                             }
                             //20200220 lyl Add ReadMode 可在此处增加对话框显示，选定readmode之后进行SetQHYCCDReadMode()
@@ -1967,7 +1972,8 @@ void EZCAP::showCameraChooser()
                         }
                         else if(ix.NumberOfReadModes<=1 &&  ret == QHYCCD_SUCCESS)//20200318仅有一种readmode模式
                         {
-                            ret = libqhyccd->SetQHYCCDReadMode(camhandle, ix.currentReadMode);//ret = SetQHYCCDReadMode(camhandle, ix.currentReadMode);
+                            ret = SetQHYCCDReadMode(
+                             camera, ix.currentReadMode);//ret = SetQHYCCDReadMode(camera, ix.currentReadMode);
                             if(ret != QHYCCD_SUCCESS)
                                 qCritical("SetQHYCCDReadMode: failed");
                             else
@@ -1986,7 +1992,7 @@ void EZCAP::showCameraChooser()
 //                        qDebug() << "EZCAP  GetQHYCCDNumberOfReadModes:"<<ix.NumberOfReadModes;
 //                        for(int i=0; i<ix.NumberOfReadModes; i++)
 //                        {
-//                            if (libqhyccd->GetQHYCCDReadModeName(camhandle, i, ix.currentReadModeName) == 0)//if (GetQHYCCDReadModeName(camhandle, i, ix.currentReadModeName) == 0)
+//                            if (GetQHYCCDReadModeName(camera, i, ix.currentReadModeName) == 0)//if (GetQHYCCDReadModeName(camera, i, ix.currentReadModeName) == 0)
 //                                ix.ReadModeList.append(ix.currentReadModeName);//列表填充
 //                        }
 //                        //20200220 lyl Add ReadMode 可在此处增加对话框显示，选定readmode之后进行SetQHYCCDReadMode()
@@ -1998,7 +2004,7 @@ void EZCAP::showCameraChooser()
 //                    }
 //                    else if(ix.NumberOfReadModes<=1 &&  ret == QHYCCD_SUCCESS)//20200318仅有一种readmode模式
 //                    {
-//                        ret = libqhyccd->SetQHYCCDReadMode(camhandle, ix.currentReadMode);//ret = SetQHYCCDReadMode(camhandle, ix.currentReadMode);
+//                        ret = SetQHYCCDReadMode(camera, ix.currentReadMode);//ret = SetQHYCCDReadMode(camera, ix.currentReadMode);
 //                        if(ret != QHYCCD_SUCCESS)
 //                            qCritical("SetQHYCCDReadMode: failed");
 //                        else
@@ -2006,12 +2012,12 @@ void EZCAP::showCameraChooser()
 //                    }
 //                    else
 //                        qDebug() << "EZCAP   GetQHYCCDNumberOfReadModes failed";
-                    ret = libqhyccd->SetQHYCCDStreamMode(camhandle, 0);           //ret = SetQHYCCDStreamMode(camhandle, 0);
+                    ret = SetQHYCCDStreamMode(camera, 0);           //ret = SetQHYCCDStreamMode(camera, 0);
                     if(ret != QHYCCD_SUCCESS)
                         qCritical("SetQHYCCDStreamMode: failed");
                     else
                         qDebug() << "EZCAP   SetQHYCCDStreamMode success"<<ret;
-                    ret = libqhyccd->InitQHYCCD(camhandle);//ret = InitQHYCCD(camhandle);
+                    ret = InitQHYCCD(camera);//ret = InitQHYCCD(camera);
                     qDebug() << "EZCAP   InitQHYCCD () end"<<ret;
                     if(ret != QHYCCD_SUCCESS)
                     {
@@ -2464,53 +2470,53 @@ void EZCAP::favorite_pBtn_calibrateFrame_clicked()
         favorite_dialog->ui->pBtn_calibrateFrame->setStyleSheet("border-image: url(:/image/buttonDown.bmp);");
         managerMenu->ui->pBtn_capture->setEnabled(false);
         //camera has connected and it worked with capture mode
-        libqhyccd->QHYCCDI2CTwoWrite(camhandle,0x30BA,0x000b);
-        libqhyccd->SetQHYCCDParam(camhandle,CONTROL_GAIN,0.0);
-        //QHYCCDI2CTwoWrite(camhandle,0x30BA,0x000b);
-        //SetQHYCCDParam(camhandle,CONTROL_GAIN,0.0);
+        QHYCCDI2CTwoWrite(camera,0x30BA,0x000b);
+        SetQHYCCDParam(camera,CONTROL_GAIN,0.0);
+        //QHYCCDI2CTwoWrite(camera,0x30BA,0x000b);
+        //SetQHYCCDParam(camera,CONTROL_GAIN,0.0);
 #ifdef WIN32
         ::Sleep(10);
 #else
         ::usleep(10000);
 #endif
-        //SetQHYCCDParam(camhandle,CONTROL_GAIN,1.0);
-        libqhyccd->SetQHYCCDParam(camhandle,CONTROL_GAIN,1.0);
+        //SetQHYCCDParam(camera,CONTROL_GAIN,1.0);
+        SetQHYCCDParam(camera,CONTROL_GAIN,1.0);
 #ifdef WIN32
         ::Sleep(10);
 #else
         ::usleep(10000);
 #endif
-        libqhyccd->SetQHYCCDParam(camhandle,CONTROL_GAIN,2.0);
-        //SetQHYCCDParam(camhandle,CONTROL_GAIN,2.0);
+        SetQHYCCDParam(camera,CONTROL_GAIN,2.0);
+        //SetQHYCCDParam(camera,CONTROL_GAIN,2.0);
 #ifdef WIN32
         ::Sleep(10);
 #else
         ::usleep(10000);
 #endif
-        libqhyccd->SetQHYCCDParam(camhandle,CONTROL_GAIN,3.0);
-        //SetQHYCCDParam(camhandle,CONTROL_GAIN,3.0);
+        SetQHYCCDParam(camera,CONTROL_GAIN,3.0);
+        //SetQHYCCDParam(camera,CONTROL_GAIN,3.0);
 #ifdef WIN32
         ::Sleep(10);
 #else
         ::usleep(10000);
 #endif
-        libqhyccd->SetQHYCCDParam(camhandle,CONTROL_GAIN,4.0);
-        //SetQHYCCDParam(camhandle,CONTROL_GAIN,4.0);
+        SetQHYCCDParam(camera,CONTROL_GAIN,4.0);
+        //SetQHYCCDParam(camera,CONTROL_GAIN,4.0);
 #ifdef WIN32
         ::Sleep(10);
 #else
         ::usleep(10000);
 #endif
-        //SetQHYCCDParam(camhandle,CONTROL_GAIN,ix.gain);
-        libqhyccd->SetQHYCCDParam(camhandle,CONTROL_GAIN,ix.gain);
+        //SetQHYCCDParam(camera,CONTROL_GAIN,ix.gain);
+        SetQHYCCDParam(camera,CONTROL_GAIN,ix.gain);
         //wait for the calibrate frame finished.
         QTime dieTime= QTime::currentTime().addSecs(3);
         while( QTime::currentTime() < dieTime )
         {
             QCoreApplication::processEvents(QEventLoop::AllEvents, 100);
         }
-        libqhyccd->QHYCCDI2CTwoWrite(camhandle,0x30BA,0x000a);
-        //QHYCCDI2CTwoWrite(camhandle,0x30BA,0x000a);
+        QHYCCDI2CTwoWrite(camera,0x30BA,0x000a);
+        //QHYCCDI2CTwoWrite(camera,0x30BA,0x000a);
         managerMenu->ui->pBtn_capture->setEnabled(true);
         favorite_dialog->ui->pBtn_calibrateFrame->setStyleSheet("border-image: url(:/image/button.bmp);");
         ix.isCalibrateFrame = false;
@@ -2524,14 +2530,14 @@ void EZCAP::favorite_pBtn_getRealTemp_clicked()
     double slope,T0;
     double temp;
     char chartemp[32];
-    //QHYCCDI2CTwoWrite(camhandle,0x30b4,0x11);
-    //temp70 = QHYCCDI2CTwoRead(camhandle,0x30c6);
-    //temp55 = QHYCCDI2CTwoRead(camhandle,0x30c8);
-    //altemp = QHYCCDI2CTwoRead(camhandle,0x30b2);
-    libqhyccd->QHYCCDI2CTwoWrite(camhandle,0x30b4,0x11);
-    temp70 = libqhyccd->QHYCCDI2CTwoRead(camhandle,0x30c6);
-    temp55 = libqhyccd->QHYCCDI2CTwoRead(camhandle,0x30c8);
-    altemp = libqhyccd->QHYCCDI2CTwoRead(camhandle,0x30b2);
+    //QHYCCDI2CTwoWrite(camera,0x30b4,0x11);
+    //temp70 = QHYCCDI2CTwoRead(camera,0x30c6);
+    //temp55 = QHYCCDI2CTwoRead(camera,0x30c8);
+    //altemp = QHYCCDI2CTwoRead(camera,0x30b2);
+    QHYCCDI2CTwoWrite(camera,0x30b4,0x11);
+    temp70 = QHYCCDI2CTwoRead(camera,0x30c6);
+    temp55 = QHYCCDI2CTwoRead(camera,0x30c8);
+    altemp = QHYCCDI2CTwoRead(camera,0x30b2);
     if(temp70 == temp55)
     {
         favorite_dialog->ui->pBtn_getRealTemp->setText(QString("error"));
@@ -2550,11 +2556,11 @@ void EZCAP::favorite_pBtn_getRealTemp_clicked()
 void EZCAP::favorite_pBtn_controlSensorChamberCyclePUMP_clicked()
 {
     if(favorite_dialog->ui->pBtn_controlSensorChamberCyclePUMP->isChecked()){
-        libqhyccd->SetQHYCCDParam(camhandle,CONTROL_SensorChamberCycle_PUMP,1);//open
+        SetQHYCCDParam(camera,CONTROL_SensorChamberCycle_PUMP,1);//open
         this->startPumpTimer();
     }
     else {
-        libqhyccd->SetQHYCCDParam(camhandle,CONTROL_SensorChamberCycle_PUMP,0);//close
+        SetQHYCCDParam(camera,CONTROL_SensorChamberCycle_PUMP,0);//close
     }
 }
 
@@ -2694,8 +2700,8 @@ void EZCAP::mgrMenu_pBtn_preview_clicked()
 
         if(ix.Exptime != ix.LastExptime)
         {
-            //ret = SetQHYCCDParam(camhandle,CONTROL_EXPOSURE, ix.Exptime * 1000);
-            ret = libqhyccd->SetQHYCCDParam(camhandle,CONTROL_EXPOSURE, ix.Exptime * 1000);
+            //ret = SetQHYCCDParam(camera,CONTROL_EXPOSURE, ix.Exptime * 1000);
+            ret = SetQHYCCDParam(camera,CONTROL_EXPOSURE, ix.Exptime * 1000);
             if(ret == QHYCCD_SUCCESS)
             {
                 ix.LastExptime = ix.Exptime;
@@ -2709,8 +2715,8 @@ void EZCAP::mgrMenu_pBtn_preview_clicked()
 
         if(ix.canUsbtraffic && ix.lastUsbtraffic != ix.usbtraffic)
         {
-            //ret = SetQHYCCDParam(camhandle, CONTROL_USBTRAFFIC, ix.usbtraffic);
-            ret = libqhyccd->SetQHYCCDParam(camhandle, CONTROL_USBTRAFFIC, ix.usbtraffic);
+            //ret = SetQHYCCDParam(camera, CONTROL_USBTRAFFIC, ix.usbtraffic);
+            ret = SetQHYCCDParam(camera, CONTROL_USBTRAFFIC, ix.usbtraffic);
             if(ret == QHYCCD_SUCCESS)
             {
                 ix.lastUsbtraffic = ix.usbtraffic;
@@ -2724,8 +2730,8 @@ void EZCAP::mgrMenu_pBtn_preview_clicked()
 
         if(ix.canHighSpeed && ix.LastDownloadSpeed != ix.DownloadSpeed)
         {
-            //ret = SetQHYCCDParam(camhandle,CONTROL_SPEED, ix.DownloadSpeed); //set speed
-            ret = libqhyccd->SetQHYCCDParam(camhandle,CONTROL_SPEED, ix.DownloadSpeed);
+            //ret = SetQHYCCDParam(camera,CONTROL_SPEED, ix.DownloadSpeed); //set speed
+            ret = SetQHYCCDParam(camera,CONTROL_SPEED, ix.DownloadSpeed);
             if(ret == QHYCCD_SUCCESS)
             {
                 ix.LastDownloadSpeed = ix.DownloadSpeed;
@@ -2739,8 +2745,8 @@ void EZCAP::mgrMenu_pBtn_preview_clicked()
 
         if(ix.lastbinx != ix.binx || ix.lastbiny != ix.biny || ix.lastWorkMode != ix.workMode)
         {
-            //ret = SetQHYCCDBinMode(camhandle, ix.binx, ix.biny);
-            ret = libqhyccd->SetQHYCCDBinMode(camhandle, ix.binx, ix.biny);
+            //ret = SetQHYCCDBinMode(camera, ix.binx, ix.biny);
+            ret = SetQHYCCDBinMode(camera, ix.binx, ix.biny);
             if(ret == QHYCCD_SUCCESS)
             {
                 ix.lastbinx = ix.binx;
@@ -2751,8 +2757,8 @@ void EZCAP::mgrMenu_pBtn_preview_clicked()
             {
                 qCritical() << "SetQHYCCDBinMode failure";
             }
-            ret = libqhyccd->SetQHYCCDResolution(camhandle, 0, 0, ix.ccdMaxImgW / ix.binx, ix.ccdMaxImgH / ix.biny);
-            //ret = SetQHYCCDResolution(camhandle, 0, 0, ix.ccdMaxImgW / ix.binx, ix.ccdMaxImgH / ix.biny);
+            ret = SetQHYCCDResolution(camera, 0, 0, ix.ccdMaxImgW / ix.binx, ix.ccdMaxImgH / ix.biny);
+            //ret = SetQHYCCDResolution(camera, 0, 0, ix.ccdMaxImgW / ix.binx, ix.ccdMaxImgH / ix.biny);
             if(ret == QHYCCD_SUCCESS)
             {
                 qDebug() << "SetQHYCCDResolution:0, 0," << ix.ccdMaxImgW / ix.binx << ix.ccdMaxImgH / ix.biny;
@@ -2773,8 +2779,8 @@ void EZCAP::mgrMenu_pBtn_preview_clicked()
 
         ix.cameraState = Camera_Exposing;
         prev_time.start();
-        //ret = ExpQHYCCDSingleFrame(camhandle); //start exposure...
-        ret = libqhyccd->ExpQHYCCDSingleFrame(camhandle);
+        //ret = ExpQHYCCDSingleFrame(camera); //start exposure...
+        ret = ExpQHYCCDSingleFrame(camera);
         if(ret == QHYCCD_SUCCESS)
         {
             qDebug() <<"ExpQHYCCDSingleFrame success, wait...";
@@ -2813,7 +2819,7 @@ void EZCAP::mgrMenu_pBtn_preview_clicked()
         managerMenu->ui->proBar_previewTime->setValue(100);
 
         ix.cameraState = Camera_Reading;
-        downloadPre = new DownloadPreThread(this);
+        downloadPre = new CameraDownloadThread(this);
         connect(downloadPre, SIGNAL(finished()), downloadPre, SLOT(deleteLater()));
         downloadPre->start();
 
@@ -2825,8 +2831,8 @@ void EZCAP::mgrMenu_pBtn_preview_clicked()
         while(ix.imageReady == GetSingleFrame_Waiting)
         {
             //处理下载进度条
-            managerMenu->ui->proBar_preview->setValue(libqhyccd->GetQHYCCDReadingProgress(camhandle));
-            //managerMenu->ui->proBar_preview->setValue(GetQHYCCDReadingProgress(camhandle));
+            managerMenu->ui->proBar_preview->setValue(GetQHYCCDReadingProgress(camera));
+            //managerMenu->ui->proBar_preview->setValue(GetQHYCCDReadingProgress(camera));
 #ifdef WIN32
             Sleep(1);
 #else
@@ -2909,8 +2915,8 @@ void EZCAP::mgrMenu_pBtn_live_preview_clicked()
             ix.imageReady = GetSingleFrame_Waiting;
             if(ix.Exptime != ix.LastExptime)
             {
-                ret = libqhyccd->SetQHYCCDParam(camhandle,CONTROL_EXPOSURE, ix.Exptime * 1000);
-                //ret = SetQHYCCDParam(camhandle,CONTROL_EXPOSURE, ix.Exptime * 1000);
+                ret = SetQHYCCDParam(camera,CONTROL_EXPOSURE, ix.Exptime * 1000);
+                //ret = SetQHYCCDParam(camera,CONTROL_EXPOSURE, ix.Exptime * 1000);
                 if(ret == QHYCCD_SUCCESS)
                 {
                     qDebug() << "SetQHYCCDParam: CONTROL_EXPOSURE, [ms] " << ix.Exptime;
@@ -2924,8 +2930,8 @@ void EZCAP::mgrMenu_pBtn_live_preview_clicked()
 
             if(ix.canUsbtraffic && ix.lastUsbtraffic != ix.usbtraffic)
             {
-                ret = libqhyccd->SetQHYCCDParam(camhandle, CONTROL_USBTRAFFIC, ix.usbtraffic);
-                //ret = SetQHYCCDParam(camhandle, CONTROL_USBTRAFFIC, ix.usbtraffic);
+                ret = SetQHYCCDParam(camera, CONTROL_USBTRAFFIC, ix.usbtraffic);
+                //ret = SetQHYCCDParam(camera, CONTROL_USBTRAFFIC, ix.usbtraffic);
                 if(ret == QHYCCD_SUCCESS)
                 {
                     ix.lastUsbtraffic = ix.usbtraffic;
@@ -2939,8 +2945,8 @@ void EZCAP::mgrMenu_pBtn_live_preview_clicked()
 
             if(ix.canHighSpeed && ix.LastDownloadSpeed != ix.DownloadSpeed)
             {
-                ret = libqhyccd->SetQHYCCDParam(camhandle,CONTROL_SPEED, ix.DownloadSpeed); //set speed
-                //ret = SetQHYCCDParam(camhandle,CONTROL_SPEED, ix.DownloadSpeed);
+                ret = SetQHYCCDParam(camera,CONTROL_SPEED, ix.DownloadSpeed); //set speed
+                //ret = SetQHYCCDParam(camera,CONTROL_SPEED, ix.DownloadSpeed);
                 if(ret == QHYCCD_SUCCESS)
                 {
                     ix.LastDownloadSpeed = ix.DownloadSpeed;
@@ -2954,8 +2960,8 @@ void EZCAP::mgrMenu_pBtn_live_preview_clicked()
 
             if(ix.lastbinx != ix.binx || ix.lastbiny != ix.biny || ix.lastWorkMode != ix.workMode)
             {
-                ret = libqhyccd->SetQHYCCDBinMode(camhandle, ix.binx, ix.biny);
-                //ret = SetQHYCCDBinMode(camhandle, ix.binx, ix.biny);
+                ret = SetQHYCCDBinMode(camera, ix.binx, ix.biny);
+                //ret = SetQHYCCDBinMode(camera, ix.binx, ix.biny);
                 if(ret == QHYCCD_SUCCESS)
                 {
                     ix.lastbinx = ix.binx;
@@ -2966,8 +2972,8 @@ void EZCAP::mgrMenu_pBtn_live_preview_clicked()
                 {
                     qCritical("SetQHYCCDBinMode failure");
                 }
-                ret = libqhyccd->SetQHYCCDResolution(camhandle, 0, 0, ix.ccdMaxImgW / ix.binx, ix.ccdMaxImgH / ix.biny);
-                //ret = SetQHYCCDResolution(camhandle, 0, 0, ix.ccdMaxImgW / ix.binx, ix.ccdMaxImgH / ix.biny);
+                ret = SetQHYCCDResolution(camera, 0, 0, ix.ccdMaxImgW / ix.binx, ix.ccdMaxImgH / ix.biny);
+                //ret = SetQHYCCDResolution(camera, 0, 0, ix.ccdMaxImgW / ix.binx, ix.ccdMaxImgH / ix.biny);
                 if(ret == QHYCCD_SUCCESS)
                 {
                     qDebug() << "SetQHYCCDResolution:0, 0," << ix.ccdMaxImgW / ix.binx << ix.ccdMaxImgH / ix.biny;
@@ -2984,8 +2990,8 @@ void EZCAP::mgrMenu_pBtn_live_preview_clicked()
 
             ix.cameraState = Camera_Exposing;
             sTime.start();
-            //ret = ExpQHYCCDSingleFrame(camhandle); //start exposure...
-            ret = libqhyccd->ExpQHYCCDSingleFrame(camhandle);
+            //ret = ExpQHYCCDSingleFrame(camera); //start exposure...
+            ret = ExpQHYCCDSingleFrame(camera);
             if(ret == QHYCCD_SUCCESS)
             {
                 qDebug() <<"ExpQHYCCDSingleFrame success, wait...";
@@ -3030,7 +3036,7 @@ void EZCAP::mgrMenu_pBtn_live_preview_clicked()
             //开启线程，获取图像数据
             qDebug() << "downloading preview frame";
             ix.cameraState = Camera_Reading;
-            downloadPre = new DownloadPreThread(this);
+            downloadPre = new CameraDownloadThread(this);
             connect(downloadPre, SIGNAL(finished()), downloadPre, SLOT(deleteLater()));
             downloadPre->start();
 
@@ -3042,8 +3048,8 @@ void EZCAP::mgrMenu_pBtn_live_preview_clicked()
             while(ix.imageReady == GetSingleFrame_Waiting)
             {
                 //处理下载进度条
-                //managerMenu->ui->proBar_preview->setValue(GetQHYCCDReadingProgress(camhandle));
-                managerMenu->ui->proBar_preview->setValue(libqhyccd->GetQHYCCDReadingProgress(camhandle));
+                //managerMenu->ui->proBar_preview->setValue(GetQHYCCDReadingProgress(camera));
+                managerMenu->ui->proBar_preview->setValue(GetQHYCCDReadingProgress(camera));
             #ifdef WIN32
                 Sleep(1);
             #else
@@ -3340,8 +3346,8 @@ void EZCAP::getOverScanBlack(unsigned char *Buf, int x,int y)
 
     pxOB = pyOB = sxOB = syOB = 0;
     //调用SDK，获取overscan区域
-    ret = libqhyccd->GetQHYCCDOverScanArea(camhandle,&pxOB, &pyOB, &sxOB, &syOB);
-    //ret = GetQHYCCDOverScanArea(camhandle,&pxOB, &pyOB, &sxOB, &syOB);
+    ret = GetQHYCCDOverScanArea(camera,&pxOB, &pyOB, &sxOB, &syOB);
+    //ret = GetQHYCCDOverScanArea(camera,&pxOB, &pyOB, &sxOB, &syOB);
     if(ret == QHYCCD_SUCCESS)
         qDebug() << "getOverScanBlack: OverScanArean" << pxOB << pyOB << sxOB << syOB;
     else
@@ -3383,8 +3389,8 @@ void EZCAP::mgrMenu_pBtn_focus_clicked()
 
         if(ix.Exptime != ix.LastExptime)
         {
-            ret = libqhyccd->SetQHYCCDParam(camhandle,CONTROL_EXPOSURE, ix.Exptime * 1000);
-            //ret = SetQHYCCDParam(camhandle,CONTROL_EXPOSURE, ix.Exptime * 1000);
+            ret = SetQHYCCDParam(camera,CONTROL_EXPOSURE, ix.Exptime * 1000);
+            //ret = SetQHYCCDParam(camera,CONTROL_EXPOSURE, ix.Exptime * 1000);
             if(ret == QHYCCD_SUCCESS)
             {
                 ix.LastExptime = ix.Exptime;
@@ -3398,8 +3404,8 @@ void EZCAP::mgrMenu_pBtn_focus_clicked()
 
         if(ix.canUsbtraffic && ix.lastUsbtraffic != ix.usbtraffic)
         {
-            ret = libqhyccd->SetQHYCCDParam(camhandle, CONTROL_USBTRAFFIC, ix.usbtraffic);
-            //ret = SetQHYCCDParam(camhandle, CONTROL_USBTRAFFIC, ix.usbtraffic);
+            ret = SetQHYCCDParam(camera, CONTROL_USBTRAFFIC, ix.usbtraffic);
+            //ret = SetQHYCCDParam(camera, CONTROL_USBTRAFFIC, ix.usbtraffic);
             if(ret == QHYCCD_SUCCESS)
             {
                 ix.lastUsbtraffic = ix.usbtraffic;
@@ -3413,8 +3419,8 @@ void EZCAP::mgrMenu_pBtn_focus_clicked()
 
         if(ix.canHighSpeed && ix.LastDownloadSpeed != ix.DownloadSpeed)
         {
-            ret = libqhyccd->SetQHYCCDParam(camhandle,CONTROL_SPEED, ix.DownloadSpeed);
-            //ret = SetQHYCCDParam(camhandle,CONTROL_SPEED, ix.DownloadSpeed);
+            ret = SetQHYCCDParam(camera,CONTROL_SPEED, ix.DownloadSpeed);
+            //ret = SetQHYCCDParam(camera,CONTROL_SPEED, ix.DownloadSpeed);
             if(ret == QHYCCD_SUCCESS)
             {
                 ix.LastDownloadSpeed = ix.DownloadSpeed;
@@ -3428,8 +3434,8 @@ void EZCAP::mgrMenu_pBtn_focus_clicked()
 
         if(ix.lastbinx != ix.binx || ix.lastbiny != ix.biny || ix.lastWorkMode != ix.workMode)
         {
-            ret = libqhyccd->SetQHYCCDBinMode(camhandle, 1, 1);
-            //ret = SetQHYCCDBinMode(camhandle, 1, 1);
+            ret = SetQHYCCDBinMode(camera, 1, 1);
+            //ret = SetQHYCCDBinMode(camera, 1, 1);
             if(ret == QHYCCD_SUCCESS)
             {
                 ix.lastbinx = ix.binx;
@@ -3450,8 +3456,8 @@ void EZCAP::mgrMenu_pBtn_focus_clicked()
             if(focusAreaStartY < 0) focusAreaStartY = 0;
             if(focusAreaSizeY > (int)ix.ccdMaxImgH ) focusAreaSizeY = (int)ix.ccdMaxImgH;
             if(focusAreaStartY + focusAreaSizeY > (int)ix.ccdMaxImgH) focusAreaStartY = (int)ix.ccdMaxImgH - focusAreaSizeY;
-            ret = libqhyccd->SetQHYCCDResolution(camhandle, focusAreaStartX, focusAreaStartY, focusAreaSizeX, focusAreaSizeY);
-            //ret = SetQHYCCDResolution(camhandle, focusAreaStartX, focusAreaStartY, focusAreaSizeX, focusAreaSizeY);
+            ret = SetQHYCCDResolution(camera, focusAreaStartX, focusAreaStartY, focusAreaSizeX, focusAreaSizeY);
+            //ret = SetQHYCCDResolution(camera, focusAreaStartX, focusAreaStartY, focusAreaSizeX, focusAreaSizeY);
             if(ret == QHYCCD_SUCCESS)
             {
                 qDebug() << "SetQHYCCDResolution " << focusAreaStartX << focusAreaStartY << focusAreaSizeX << focusAreaSizeY;
@@ -3467,8 +3473,8 @@ void EZCAP::mgrMenu_pBtn_focus_clicked()
         ix.dateOBS = QDateTime::currentDateTime().toString(Qt::ISODate);  //记录当前拍摄时间戳
 
         ix.cameraState = Camera_Exposing;
-        //ret = ExpQHYCCDSingleFrame(camhandle); //start exposure...
-        ret = libqhyccd->ExpQHYCCDSingleFrame(camhandle);
+        //ret = ExpQHYCCDSingleFrame(camera); //start exposure...
+        ret = ExpQHYCCDSingleFrame(camera);
         if(ret == QHYCCD_SUCCESS)
         {
             qDebug() <<"ExpQHYCCDSingleFrame success, wait...";
@@ -3490,7 +3496,7 @@ void EZCAP::mgrMenu_pBtn_focus_clicked()
         //获取图像
         qDebug() << "donwnloading focus frame";
         ix.cameraState = Camera_Reading;
-        downloadFoc = new DownloadFocThread(this);
+        downloadFoc = new CameraDownloadThread(this);
         connect(downloadFoc, SIGNAL(finished()), downloadFoc, SLOT(deleteLater()));
         downloadFoc->start();
 
@@ -3564,8 +3570,8 @@ void EZCAP::mgrMenu_pBtn_live_focus_clicked()
             ix.imageReady = GetSingleFrame_Waiting;
             if(ix.Exptime != ix.LastExptime)
             {
-                ret = libqhyccd->SetQHYCCDParam(camhandle,CONTROL_EXPOSURE, ix.Exptime * 1000);
-                //ret = SetQHYCCDParam(camhandle,CONTROL_EXPOSURE, ix.Exptime * 1000);
+                ret = SetQHYCCDParam(camera,CONTROL_EXPOSURE, ix.Exptime * 1000);
+                //ret = SetQHYCCDParam(camera,CONTROL_EXPOSURE, ix.Exptime * 1000);
                 if(ret == QHYCCD_SUCCESS)
                 {
                     ix.LastExptime = ix.Exptime;
@@ -3579,8 +3585,8 @@ void EZCAP::mgrMenu_pBtn_live_focus_clicked()
 
             if(ix.canUsbtraffic && ix.lastUsbtraffic != ix.usbtraffic)
             {
-                ret = libqhyccd->SetQHYCCDParam(camhandle, CONTROL_USBTRAFFIC, ix.usbtraffic);
-                //ret = SetQHYCCDParam(camhandle, CONTROL_USBTRAFFIC, ix.usbtraffic);
+                ret = SetQHYCCDParam(camera, CONTROL_USBTRAFFIC, ix.usbtraffic);
+                //ret = SetQHYCCDParam(camera, CONTROL_USBTRAFFIC, ix.usbtraffic);
                 if(ret == QHYCCD_SUCCESS)
                 {
                     ix.lastUsbtraffic = ix.usbtraffic;
@@ -3594,8 +3600,8 @@ void EZCAP::mgrMenu_pBtn_live_focus_clicked()
 
             if(ix.canHighSpeed && ix.LastDownloadSpeed != ix.DownloadSpeed)
             {
-                ret = libqhyccd->SetQHYCCDParam(camhandle,CONTROL_SPEED, ix.DownloadSpeed);
-                //ret = SetQHYCCDParam(camhandle,CONTROL_SPEED, ix.DownloadSpeed);
+                ret = SetQHYCCDParam(camera,CONTROL_SPEED, ix.DownloadSpeed);
+                //ret = SetQHYCCDParam(camera,CONTROL_SPEED, ix.DownloadSpeed);
                 if(ret == QHYCCD_SUCCESS)
                 {
                     ix.LastDownloadSpeed = ix.DownloadSpeed;
@@ -3609,8 +3615,8 @@ void EZCAP::mgrMenu_pBtn_live_focus_clicked()
 
             if(ix.lastbinx != ix.binx || ix.lastbiny != ix.biny || ix.lastWorkMode != ix.workMode)
             {
-                //ret = SetQHYCCDBinMode(camhandle, ix.binx, ix.biny);
-                ret = libqhyccd->SetQHYCCDBinMode(camhandle, ix.binx, ix.biny);
+                //ret = SetQHYCCDBinMode(camera, ix.binx, ix.biny);
+                ret = SetQHYCCDBinMode(camera, ix.binx, ix.biny);
                 if(ret == QHYCCD_SUCCESS)
                 {
                     ix.lastbinx = ix.binx;
@@ -3631,8 +3637,9 @@ void EZCAP::mgrMenu_pBtn_live_focus_clicked()
                 if(focusAreaStartY < 0) focusAreaStartY = 0;
                 if(focusAreaSizeY > (int)ix.ccdMaxImgH) focusAreaSizeY = (int)ix.ccdMaxImgH;
                 if(focusAreaStartY + focusAreaSizeY > (int)ix.ccdMaxImgH) focusAreaStartY = (int)ix.ccdMaxImgH - focusAreaSizeY;
-                ret = libqhyccd->SetQHYCCDResolution(camhandle, focusAreaStartX, focusAreaStartY, focusAreaSizeX, focusAreaSizeY);
-                //ret = SetQHYCCDResolution(camhandle, focusAreaStartX, focusAreaStartY, focusAreaSizeX, focusAreaSizeY);
+                ret = SetQHYCCDResolution(
+                  camera, focusAreaStartX, focusAreaStartY, focusAreaSizeX, focusAreaSizeY);
+                //ret = SetQHYCCDResolution(camera, focusAreaStartX, focusAreaStartY, focusAreaSizeX, focusAreaSizeY);
                 if(ret == QHYCCD_SUCCESS)
                 {
                     qDebug() << "SetQHYCCDResolution..." << focusAreaStartX << focusAreaStartY << focusAreaSizeX << focusAreaSizeY;
@@ -3648,8 +3655,8 @@ void EZCAP::mgrMenu_pBtn_live_focus_clicked()
             ix.dateOBS = QDateTime::currentDateTime().toString(Qt::ISODate);  //记录当前拍摄时间戳
 
             ix.cameraState = Camera_Exposing;
-            ret = libqhyccd->ExpQHYCCDSingleFrame(camhandle);
-            //ret = ExpQHYCCDSingleFrame(camhandle); //start exposure...
+            ret = ExpQHYCCDSingleFrame(camera);
+            //ret = ExpQHYCCDSingleFrame(camera); //start exposure...
             if(ret == QHYCCD_SUCCESS)
             {
                 qDebug() <<"ExpQHYCCDSingleFrame success, wait...";
@@ -3670,7 +3677,7 @@ void EZCAP::mgrMenu_pBtn_live_focus_clicked()
 
             ix.cameraState = Camera_Reading;
             //开启线程，获取图像数据
-            downloadFoc = new DownloadFocThread(this);
+            downloadFoc = new CameraDownloadThread(this);
             connect(downloadFoc, SIGNAL(finished()), downloadFoc, SLOT(deleteLater()));
             downloadFoc->start();
 
@@ -3995,7 +4002,7 @@ void EZCAP::displayFocusAssistantImage(IplImage *image)
     sprintf(fwhm,"FWHM %7d",FocusInfo.FWHM_Result);
     sprintf(itsty,"Intensity %d",FocusInfo.DeltaPixel);
 
-    SendTwoLine2QHYCCDInterCamOled(camhandle,fwhm,itsty);
+    SendTwoLine2QHYCCDInterCamOled(camera,fwhm,itsty);
 */
     //当前终点坐标为下一次的起始点坐标
     fwhm_x = FocusCurveX;
@@ -4384,8 +4391,8 @@ void EZCAP::mgrMenu_pBtn_stop_clicked()
 
         //qDebug() << "CancelQHYCCDExposing...";
         //停止曝光
-        uint32_t ret = libqhyccd->CancelQHYCCDExposingAndReadout(camhandle);
-        //uint32_t ret = CancelQHYCCDExposingAndReadout(camhandle);
+        uint32_t ret = CancelQHYCCDExposingAndReadout(camera);
+        //uint32_t ret = CancelQHYCCDExposingAndReadout(camera);
         if(ret == QHYCCD_SUCCESS)
         {
             qDebug() << "CancelQHYCCDExposingAndReadout";
@@ -4439,7 +4446,7 @@ void EZCAP::mgrMenu_pBtn_capture_clicked()
 //            qDebug() <<"Dither Settle:" << dither << settle;
 
 //            startDitherTimer();
-//            ret = libqhyccd->ControlPHD2Dither(dither, settle);
+//            ret = ControlPHD2Dither(dither, settle);
 //            //ret = ControlPHD2Dither(dither, settle);    //Control PHD2 Dither
 //            if(ret == 0)
 //            {
@@ -4463,8 +4470,8 @@ void EZCAP::mgrMenu_pBtn_capture_clicked()
         //------------------------
         if(ix.canMechanicalShutter && (ix.MechanicalShutterMode != ix.LastMechanicalShutterMode))
         {
-            ret = libqhyccd->ControlQHYCCDShutter(camhandle, ix.MechanicalShutterMode);
-            //ret = ControlQHYCCDShutter(camhandle, ix.MechanicalShutterMode);//control shutter open or close
+            ret = ControlQHYCCDShutter(camera, ix.MechanicalShutterMode);
+            //ret = ControlQHYCCDShutter(camera, ix.MechanicalShutterMode);//control shutter open or close
             if(ret == QHYCCD_SUCCESS)
             {
                 qDebug() << "ControlQHYCCDShutter." << ix.MechanicalShutterMode;
@@ -4478,8 +4485,8 @@ void EZCAP::mgrMenu_pBtn_capture_clicked()
 
         if(ix.Exptime != ix.LastExptime)
         {
-            ret = libqhyccd->SetQHYCCDParam(camhandle,CONTROL_EXPOSURE, ix.Exptime * 1000);
-            //ret = SetQHYCCDParam(camhandle,CONTROL_EXPOSURE, ix.Exptime * 1000);
+            ret = SetQHYCCDParam(camera,CONTROL_EXPOSURE, ix.Exptime * 1000);
+            //ret = SetQHYCCDParam(camera,CONTROL_EXPOSURE, ix.Exptime * 1000);
             if(ret == QHYCCD_SUCCESS)
             {
                 qDebug() << "SetQHYCCDParam: CONTROL_EXPOSURE, [ms]" << ix.Exptime;
@@ -4493,8 +4500,8 @@ void EZCAP::mgrMenu_pBtn_capture_clicked()
 
         if(ix.canUsbtraffic && ix.lastUsbtraffic != ix.usbtraffic)
         {
-            ret = libqhyccd->SetQHYCCDParam(camhandle, CONTROL_USBTRAFFIC, ix.usbtraffic);
-            //ret = SetQHYCCDParam(camhandle, CONTROL_USBTRAFFIC, ix.usbtraffic);
+            ret = SetQHYCCDParam(camera, CONTROL_USBTRAFFIC, ix.usbtraffic);
+            //ret = SetQHYCCDParam(camera, CONTROL_USBTRAFFIC, ix.usbtraffic);
             if(ret == QHYCCD_SUCCESS)
             {
                 ix.lastUsbtraffic = ix.usbtraffic;
@@ -4508,8 +4515,8 @@ void EZCAP::mgrMenu_pBtn_capture_clicked()
 
         if(ix.canHighSpeed && ix.DownloadSpeed != ix.LastDownloadSpeed)
         {
-            ret = libqhyccd->SetQHYCCDParam(camhandle,CONTROL_SPEED, ix.DownloadSpeed);
-            //ret = SetQHYCCDParam(camhandle,CONTROL_SPEED, ix.DownloadSpeed);
+            ret = SetQHYCCDParam(camera,CONTROL_SPEED, ix.DownloadSpeed);
+            //ret = SetQHYCCDParam(camera,CONTROL_SPEED, ix.DownloadSpeed);
             if(ret == QHYCCD_SUCCESS)
             {
                 qDebug() << "SetQHYCCDParam: CONTROL_SPEED" << ix.DownloadSpeed;
@@ -4523,8 +4530,8 @@ void EZCAP::mgrMenu_pBtn_capture_clicked()
 
         if(ix.lastbinx != ix.binx || ix.lastbiny != ix.biny || ix.lastWorkMode != ix.workMode)
         {
-            ret = libqhyccd->SetQHYCCDBinMode(camhandle, ix.binx, ix.biny);
-            //ret = SetQHYCCDBinMode(camhandle, ix.binx, ix.biny);
+            ret = SetQHYCCDBinMode(camera, ix.binx, ix.biny);
+            //ret = SetQHYCCDBinMode(camera, ix.binx, ix.biny);
             if(ret == QHYCCD_SUCCESS)
             {
                 ix.lastbinx = ix.binx;
@@ -4537,8 +4544,8 @@ void EZCAP::mgrMenu_pBtn_capture_clicked()
             {
                 qCritical() << "SetQHYCCDBinMode failure";
             }
-            ret = libqhyccd->SetQHYCCDResolution(camhandle, 0, 0, ix.ccdMaxImgW/ix.binx, ix.ccdMaxImgH/ix.biny);
-            //ret = SetQHYCCDResolution(camhandle, 0, 0, ix.ccdMaxImgW/ix.binx, ix.ccdMaxImgH/ix.biny);
+            ret = SetQHYCCDResolution(camera, 0, 0, ix.ccdMaxImgW/ix.binx, ix.ccdMaxImgH/ix.biny);
+            //ret = SetQHYCCDResolution(camera, 0, 0, ix.ccdMaxImgW/ix.binx, ix.ccdMaxImgH/ix.biny);
             if(ret == QHYCCD_SUCCESS)
             {
                 qDebug() << "SetQHYCCDResolution 0 0" << ix.ccdMaxImgW / ix.binx << ix.ccdMaxImgH / ix.biny;
@@ -4558,8 +4565,8 @@ void EZCAP::mgrMenu_pBtn_capture_clicked()
         //Triger function
         if(ix.canTriger)
         {
-            ret = libqhyccd->SetQHYCCDTrigerFunction(camhandle, ix.trigerInOrOut);
-            //ret = SetQHYCCDTrigerFunction(camhandle, ix.trigerInOrOut);
+            ret = SetQHYCCDTrigerFunction(camera, ix.trigerInOrOut);
+            //ret = SetQHYCCDTrigerFunction(camera, ix.trigerInOrOut);
             if(ret == QHYCCD_SUCCESS)
             {
                 qDebug() << "SetQHYCCDTrigerFunction" << ix.trigerInOrOut;
@@ -4572,8 +4579,8 @@ void EZCAP::mgrMenu_pBtn_capture_clicked()
         //20200512lyl GPSon
         if(ix.isGPSon)
         {
-            ret = libqhyccd->SetQHYCCDParam(camhandle,CAM_GPS, ix.isGPSon);
-            //ret = SetQHYCCDParam(camhandle,CAM_GPS, ix.isGPSon);
+            ret = SetQHYCCDParam(camera,CAM_GPS, ix.isGPSon);
+            //ret = SetQHYCCDParam(camera,CAM_GPS, ix.isGPSon);
             if(ret == QHYCCD_SUCCESS)
             {
                 qDebug() << "SetQHYCCDParam CAM_GPS" << ix.isGPSon;
@@ -4588,8 +4595,8 @@ void EZCAP::mgrMenu_pBtn_capture_clicked()
         //sign up camera is exposuring...
         ix.cameraState = Camera_Exposing;
         sTime.start();
-        ret = libqhyccd->ExpQHYCCDSingleFrame(camhandle);
-        //ret = ExpQHYCCDSingleFrame(camhandle);//start exposure...
+        ret = ExpQHYCCDSingleFrame(camera);
+        //ret = ExpQHYCCDSingleFrame(camera);//start exposure...
         if(ret == QHYCCD_ERROR)
         {
             qCritical("ExpQHYCCDSingleFrame failed");
@@ -4642,7 +4649,7 @@ void EZCAP::mgrMenu_pBtn_capture_clicked()
             qDebug() << "downloading captured frame";
             ix.cameraState = Camera_Reading;
 
-            downloadCap = new DownloadCapThread(this);
+            downloadCap = new CameraDownloadThread(this);
             connect(downloadCap, SIGNAL(finished()), downloadCap, SLOT(deleteLater()));
             downloadCap->start();
 
@@ -4651,8 +4658,8 @@ void EZCAP::mgrMenu_pBtn_capture_clicked()
             {
                 //处理下载进度条
                 //....
-                managerMenu->ui->proBar_capture->setValue(libqhyccd->GetQHYCCDReadingProgress(camhandle));
-                //managerMenu->ui->proBar_capture->setValue(GetQHYCCDReadingProgress(camhandle));
+                managerMenu->ui->proBar_capture->setValue(GetQHYCCDReadingProgress(camera));
+                //managerMenu->ui->proBar_capture->setValue(GetQHYCCDReadingProgress(camera));
 #ifdef WIN32
                 Sleep(1);
 #else
@@ -4694,8 +4701,8 @@ void EZCAP::mgrMenu_pBtn_capture_clicked()
         ix.cameraState = Camera_Idle;
 
         //---------调用SDK，获取overscan区域,用于噪声分析---------------------
-        ret =libqhyccd->GetQHYCCDOverScanArea(camhandle,&pxOB, &pyOB, &sxOB, &syOB);
-       // ret = GetQHYCCDOverScanArea(camhandle,&pxOB, &pyOB, &sxOB, &syOB);
+        ret =GetQHYCCDOverScanArea(camera,&pxOB, &pyOB, &sxOB, &syOB);
+       // ret = GetQHYCCDOverScanArea(camera,&pxOB, &pyOB, &sxOB, &syOB);
         if(ret == QHYCCD_SUCCESS)
         {
             ix.OverScanStartX = pxOB;
@@ -4710,8 +4717,8 @@ void EZCAP::mgrMenu_pBtn_capture_clicked()
         }
 
         //---------------------获取有效区域----------------------------------
-        //ret = GetQHYCCDEffectiveArea(camhandle,&px, &py, &sx, &sy);
-        ret = libqhyccd->GetQHYCCDEffectiveArea(camhandle,&px, &py, &sx, &sy);
+        //ret = GetQHYCCDEffectiveArea(camera,&px, &py, &sx, &sy);
+        ret = GetQHYCCDEffectiveArea(camera,&px, &py, &sx, &sy);
         if(ret == QHYCCD_SUCCESS)
         {
             ix.onlyStartX = px;
@@ -6079,8 +6086,8 @@ void EZCAP::currentWorkingModeChanged(int workmode)
             {
                 managerMenu->ui->hSlider_gain_preview->setValue(ix.gain);
                 unsigned int ret = QHYCCD_ERROR;
-                ret = libqhyccd->SetQHYCCDParam(camhandle,CONTROL_GAIN, ix.gain);
-                //ret = SetQHYCCDParam(camhandle,CONTROL_GAIN, ix.gain);
+                ret = SetQHYCCDParam(camera,CONTROL_GAIN, ix.gain);
+                //ret = SetQHYCCDParam(camera,CONTROL_GAIN, ix.gain);
                 if(ret == QHYCCD_SUCCESS)
                 {
                     ix.lastGain = ix.gain;
@@ -6095,8 +6102,8 @@ void EZCAP::currentWorkingModeChanged(int workmode)
             {
                 managerMenu->ui->hSlider_offset_preview->setValue(ix.offset);
                 unsigned int ret = QHYCCD_ERROR;
-                ret = libqhyccd->SetQHYCCDParam(camhandle, CONTROL_OFFSET, ix.offset);
-                //ret = SetQHYCCDParam(camhandle, CONTROL_OFFSET, ix.offset);
+                ret = SetQHYCCDParam(camera, CONTROL_OFFSET, ix.offset);
+                //ret = SetQHYCCDParam(camera, CONTROL_OFFSET, ix.offset);
                 if(ret == QHYCCD_SUCCESS)
                 {
                     ix.lastOffset = ix.offset;
@@ -6658,8 +6665,8 @@ void ExecutePlanTable::run()
                         {
                             savePath = planner_dialog->ui->pBtn_folder_planner->text();
                         }
-                        DiskTools *dt = new DiskTools;
-                        quint64 freeSpace = dt->getDiskFreeSpace(savePath);
+                        QStorageInfo storage;
+                        quint64 freeSpace = storage.bytesAvailable()/1000/1000
                         //qDebug() << "Free:" << freeSpace << "MB";
                         planner_dialog->ui->status2_planner->setText(tr("Free:")+QString::number(freeSpace)+"MB");
 #endif
@@ -6840,8 +6847,8 @@ void ExecutePlanTable::run()
  */
 void ExecuteCFWOrder::run()
 {
-    //int ret = SendOrder2QHYCCDCFW(camhandle, &ix.dstCfwPos, 1);//set the CFW posiion
-    int ret = libqhyccd->SendOrder2QHYCCDCFW(camhandle, &ix.dstCfwPos, 1);
+    //int ret = SendOrder2QHYCCDCFW(camera, &ix.dstCfwPos, 1);//set the CFW posiion
+    int ret = SendOrder2QHYCCDCFW(camera, &ix.dstCfwPos, 1);
     if(ret != QHYCCD_SUCCESS)
         qCritical() << "SendOrder2QHYCCDCFW failure";
     else
@@ -6961,13 +6968,13 @@ void EZCAP::tempTimer_timeout()
     {
         QApplication::processEvents();//防止长时间导致界面假死
         //取数
-        //ix.nowTemp = GetQHYCCDParam(camhandle,CONTROL_CURTEMP);//获取温度
-        ix.nowTemp = libqhyccd->GetQHYCCDParam(camhandle,CONTROL_CURTEMP);
+        //ix.nowTemp = GetQHYCCDParam(camera,CONTROL_CURTEMP);//获取温度
+        ix.nowTemp = GetQHYCCDParam(camera,CONTROL_CURTEMP);
         qDebug()<<"ix.nowTemp:="<<ix.nowTemp;
         ix.nowVoltage = DegreeTomV(ix.nowTemp);//计算电压值
         if(ix.canHumidity){
-            int ret = libqhyccd->GetQHYCCDHumidity(camhandle, &ix.nowHumidity);
-            //int ret = GetQHYCCDHumidity(camhandle, &ix.nowHumidity);
+            int ret = GetQHYCCDHumidity(camera, &ix.nowHumidity);
+            //int ret = GetQHYCCDHumidity(camera, &ix.nowHumidity);
             if(ret == QHYCCD_SUCCESS)
             {
                 statusLabel_RH->setText(QString("RH:") + QString::number(ix.nowHumidity, 'f', 1) + "%");
@@ -6977,8 +6984,8 @@ void EZCAP::tempTimer_timeout()
         }
         //20200318
         if(ix.canPressure){
-            int ret = libqhyccd->GetQHYCCDPressure(camhandle, &ix.nowPressure);
-            //int ret = GetQHYCCDPressure(camhandle, &ix.nowPressure);
+            int ret = GetQHYCCDPressure(camera, &ix.nowPressure);
+            //int ret = GetQHYCCDPressure(camera, &ix.nowPressure);
             if(ret == QHYCCD_SUCCESS)
             {
                 statusLabel_PRESS->setText( QString::number(ix.nowPressure, 'f', 1) + "mbar");//20200329去掉显示QString("PRESS:") +
@@ -7005,8 +7012,8 @@ void EZCAP::tempTimer_timeout()
 #ifdef Q_OS_MAC
             sprintf(mode,"USB Camera");
 #endif
-            //int ret = SendFourLine2QHYCCDInterCamOled(camhandle,temp,info,time,mode);
-            int ret = libqhyccd->SendFourLine2QHYCCDInterCamOled(camhandle,temp,info,time,mode);
+            //int ret = SendFourLine2QHYCCDInterCamOled(camera,temp,info,time,mode);
+            int ret = SendFourLine2QHYCCDInterCamOled(camera,temp,info,time,mode);
             if(ret != QHYCCD_SUCCESS)
             {
                 //qDebug() << "SendFourLine2QHYCCDInterCamOled failed";
@@ -7068,19 +7075,19 @@ void EZCAP::tempTimer_timeout()
         {
             //停止制冷
             ix.nowPWM = 0;
-            ret = libqhyccd->SetQHYCCDParam(camhandle, CONTROL_MANULPWM, 0);
-            //ret = SetQHYCCDParam(camhandle, CONTROL_MANULPWM, 0);
+            ret = SetQHYCCDParam(camera, CONTROL_MANULPWM, 0);
+            //ret = SetQHYCCDParam(camera, CONTROL_MANULPWM, 0);
             if(ret != QHYCCD_SUCCESS)
             {
-                qCritical() << "SetQHYCCDParam(camhandle,CONTROL_MANULPWM,0) failure";
+                qCritical() << "SetQHYCCDParam(camera,CONTROL_MANULPWM,0) failure";
             }
         }
         else if(ix.coolerMode == Cooler_Manual)
         {
             //开启手动制冷
             ix.nowPWM = tempControl_dialog->ui->vSlider_power_tempControl->value();
-            ret = libqhyccd->SetQHYCCDParam(camhandle,CONTROL_MANULPWM,ix.nowPWM);
-            //ret = SetQHYCCDParam(camhandle,CONTROL_MANULPWM,ix.nowPWM);
+            ret = SetQHYCCDParam(camera,CONTROL_MANULPWM,ix.nowPWM);
+            //ret = SetQHYCCDParam(camera,CONTROL_MANULPWM,ix.nowPWM);
             if(ret != QHYCCD_SUCCESS)
             {
                 qCritical() << "SetQHYCCDParam CONTROL_MANULPWM" << ix.nowPWM << " failure";
@@ -7088,8 +7095,8 @@ void EZCAP::tempTimer_timeout()
         }
         else if(ix.coolerMode == Cooler_Auto)
         {
-            ix.nowPWM =libqhyccd-> GetQHYCCDParam(camhandle,CONTROL_CURPWM);
-            //ix.nowPWM = GetQHYCCDParam(camhandle,CONTROL_CURPWM);
+            ix.nowPWM = GetQHYCCDParam(camera,CONTROL_CURPWM);
+            //ix.nowPWM = GetQHYCCDParam(camera,CONTROL_CURPWM);
             //开始自动温控制冷
 
             if(this->TESTED_PID)
@@ -7098,13 +7105,13 @@ void EZCAP::tempTimer_timeout()
                 double pVal = tempControl_dialog->ui->doubleSpinBox_P->value();
                 double iVal = tempControl_dialog->ui->doubleSpinBox_I->value();
                 double dVal = tempControl_dialog->ui->doubleSpinBox_D->value();
-                libqhyccd->TestQHYCCDPIDParas(camhandle, pVal, iVal, dVal);
-                //TestQHYCCDPIDParas(camhandle, pVal, iVal, dVal);
+                TestQHYCCDPIDParas(camera, pVal, iVal, dVal);
+                //TestQHYCCDPIDParas(camera, pVal, iVal, dVal);
                 //qDebug() << "set pid paras";
             }
             ix.targetTemp = tempControl_dialog->ui->vSlider_temp_tempCotrol->value() - 50;
-            ret = libqhyccd->SetQHYCCDParam(camhandle, CONTROL_COOLER, ix.targetTemp);
-            //ret = SetQHYCCDParam(camhandle, CONTROL_COOLER, ix.targetTemp);
+            ret = SetQHYCCDParam(camera, CONTROL_COOLER, ix.targetTemp);
+            //ret = SetQHYCCDParam(camera, CONTROL_COOLER, ix.targetTemp);
             if(ret != QHYCCD_SUCCESS)
             {
                 qCritical() << "ControlQHYCCDTemp failure";
@@ -7135,8 +7142,8 @@ void EZCAP::cfwTimer_timeout()
         {
             ix.curCfwPos[i] = 0;
         }
-        int ret = libqhyccd->GetQHYCCDCFWStatus(camhandle, ix.curCfwPos);
-        //int ret = GetQHYCCDCFWStatus(camhandle, ix.curCfwPos);
+        int ret = GetQHYCCDCFWStatus(camera, ix.curCfwPos);
+        //int ret = GetQHYCCDCFWStatus(camera, ix.curCfwPos);
         if(ret == QHYCCD_SUCCESS)
         {
             if(ix.dstCfwPos == ix.curCfwPos[0])
@@ -7173,7 +7180,7 @@ void EZCAP::ditherTimer_timeout()
         int ret;
         QString recStr;
         //ret = CheckPHD2Status(str);
-        ret = libqhyccd->CheckPHD2Status(str);
+        ret = CheckPHD2Status(str);
         if(ret == 0)
         {
             recStr = QString(QLatin1String(str));
@@ -7218,7 +7225,7 @@ void EZCAP::startPumpTimer()
 void EZCAP::stopPumpTimer()
 {
     PumpTimer->stop();
-    libqhyccd->SetQHYCCDParam(camhandle,CONTROL_SensorChamberCycle_PUMP,0);
+    SetQHYCCDParam(camera,CONTROL_SensorChamberCycle_PUMP,0);
     favorite_dialog->ui->pBtn_controlSensorChamberCyclePUMP->setEnabled(true);
     favorite_dialog->ui->pBtn_controlSensorChamberCyclePUMP->setChecked(false);
 

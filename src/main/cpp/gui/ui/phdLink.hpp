@@ -1,7 +1,7 @@
 #ifndef PHDLINK_H
 #define PHDLINK_H
 //#include "dithercontrol.hpp"
-#include "dllqhyccd.hpp"
+
 #include <QDialog>
 
 namespace Ui {

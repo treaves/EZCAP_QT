@@ -1,11 +1,11 @@
 #include "about.hpp"
 #include "ui_about.h"
-//#include "qhyccd.hpp"
-#include "dllqhyccd.hpp"
+
 #include <QException>
 
 #include <QDesktopServices>
 #include <QUrl>
+#include <qhyccd.h>
 
 About *about_dialog;
 
@@ -78,7 +78,7 @@ void About::resetUI()
     try
     {
     uint32_t year,month,day,subday;
-    libqhyccd->GetQHYCCDSDKVersion(&year,&month,&day,&subday);
+    GetQHYCCDSDKVersion(&year,&month,&day,&subday);
     ui->label_SDKVERSION->setText(QString("with QHYCCD SDK Version:%1-%2-%3-%4").arg(year).arg(month).arg(day).arg(subday));
     }
     catch(QException e)

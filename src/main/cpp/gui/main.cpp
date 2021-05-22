@@ -1,5 +1,4 @@
 #include "ui/ezCap.hpp"
-#include "dllqhyccd.hpp"
 #include <QApplication>
 #include <QTextCodec>
 #include <QPushButton>
@@ -7,22 +6,12 @@
 #include <QTextStream>
 #include <QDateTime>
 #include <QDir>
-#include <QDebug>
-
-#include <QStyleFactory>
-
-//#include "qhyccdStatus.hpp"
-#include <qhyccdstruct.h>
-/*#ifdef WIN32
-#include "qhyccd.hpp"
-#endif
-
-#ifdef LINUX
 #include <qhyccd.h>
-#endif*/
-#include <QLibrary>
-#include <QDebug>
+#include <QStyleFactory>
 #include <QScreen>
+#include <QDebug>
+
+#include <qhyccd.h>
 
 QString logFileFullName;
 
@@ -153,7 +142,6 @@ int main(int argc, char *argv[])
 
     installMsgHandler();
 
-    libqhyccd =new dllqhyccd();
     unsigned int ret=0;
     QDir *temp = new QDir;
     bool exist = temp->exists("./Bias");
@@ -174,15 +162,10 @@ int main(int argc, char *argv[])
             qDebug() << "mkdir Black failed" << Qt::endl;
         }
     }
-    ret =libqhyccd->InitQHYCCDResource(); //ret = InitQHYCCDResource();
+    ret = InitQHYCCDResource();
     if(ret != QHYCCD_SUCCESS)
     {
         qCritical("InitQHYCCDResource: failed");
-        if(libqhyccd)
-        {
-            delete libqhyccd;
-            libqhyccd=NULL;
-        }
     }
     else
     {

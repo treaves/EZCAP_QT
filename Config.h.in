@@ -1,10 +1,4 @@
-#ifndef __CONFIG_H__
-#define __CONFIG_H__
-
-
-
-
-
+#pragma once
 
 #define CALLBACK_MODE_SUPPORT		1
 #define	IMAGEQUEUE_ORIG_MODE		1
@@ -38,7 +32,12 @@
 #define LIBUSB_MODE_SUPPORT  		1
 #endif
 
+#define QHYCCD_SUCCESS                  0
+#define QHYCCD_ERROR                    0xFFFFFFFF
+#define QHYCCD_READ_DIRECTLY            0x2001
+#define QHYCCD_DELAY_200MS              0x2000
+typedef void qhyccd_handle;
 
-
-#endif
-
+/* ***************************************************************************************************************** */
+// MARK: - Numeric Constants (prevents Magic Number warnings)
+const int     BPP_8    = 8;

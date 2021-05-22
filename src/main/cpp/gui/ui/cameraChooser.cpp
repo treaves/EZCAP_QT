@@ -7,7 +7,7 @@
 #include <QException>
 
 //#include "qhyccdStatus.hpp"
-#include "dllqhyccd.hpp"
+
 #include <QDebug>
 #include <QMessageBox>
 #include <QDesktopServices>
@@ -16,7 +16,7 @@
 
 extern struct IX ix;
 
-extern qhyccd_handle *camhandle;
+extern qhyccd_handle * camera;
 
 CameraChooser *cameraChooser;
 
@@ -38,7 +38,7 @@ CameraChooser::CameraChooser(QWidget *parent) :
 #ifdef Q_OS_MAC
     int ret;
     QString path = QCoreApplication::applicationDirPath();
-    ret =libqhyccd->OSXInitQHYCCDFirmware((char*)path.toStdString().c_str());//ret = OSXInitQHYCCDFirmware((char*)path.toStdString().c_str());
+    ret =OSXInitQHYCCDFirmware((char*)path.toStdString().c_str());//ret = OSXInitQHYCCDFirmware((char*)path.toStdString().c_str());
     if(ret == QHYCCD_SUCCESS)
     {
         sleep(5);
@@ -80,13 +80,13 @@ void CameraChooser::on_coBox_cameraChooser_currentIndexChanged(const QString &ar
         pstr = ui->coBox_cameraChooser->currentText().toLocal8Bit();
         memcpy(camid,pstr.data(),pstr.size());
         qDebug() << "current camera:" << camid;
-        camhandle = libqhyccd->OpenQHYCCD(camid);
-        //camhandle = OpenQHYCCD(camid);
-        if(camhandle != NULL)
+        camera = OpenQHYCCD(camid);
+        //camera = OpenQHYCCD(camid);
+        if(camera != NULL)
         {
             try{
-                ret=libqhyccd->GetQHYCCDNumberOfReadModes(camhandle,&ix.NumberOfReadModes);
-                //ret=GetQHYCCDNumberOfReadModes(camhandle,&ix.NumberOfReadModes);
+                ret=GetQHYCCDNumberOfReadModes(camera,&ix.NumberOfReadModes);
+                //ret=GetQHYCCDNumberOfReadModes(camera,&ix.NumberOfReadModes);
             }
             catch(QException e)
             {
@@ -98,8 +98,8 @@ void CameraChooser::on_coBox_cameraChooser_currentIndexChanged(const QString &ar
                 //qDebug() << "current GetQHYCCDNumberOfReadModes:"<<ix.NumberOfReadModes;
                 for(int i=0; i<ix.NumberOfReadModes; i++)
                 {
-                    if (libqhyccd->GetQHYCCDReadModeName(camhandle, i, ix.currentReadModeName) == 0)
-                    //if (GetQHYCCDReadModeName(camhandle, i, ix.currentReadModeName) == 0)
+                    if (GetQHYCCDReadModeName(camera, i, ix.currentReadModeName) == 0)
+                    //if (GetQHYCCDReadModeName(camera, i, ix.currentReadModeName) == 0)
                         ix.ReadModeList.append(ix.currentReadModeName);//列表填充
                 }
                 ui->comboBox_readmode->clear();
@@ -108,8 +108,8 @@ void CameraChooser::on_coBox_cameraChooser_currentIndexChanged(const QString &ar
             else
                 qDebug() << "GetQHYCCDNumberOfReadModes failed";
         }
-        libqhyccd->CloseQHYCCD(camhandle);
-        //CloseQHYCCD(camhandle);
+        CloseQHYCCD(camera);
+        //CloseQHYCCD(camera);
         //ReleaseQHYCCDResource();
     }
 }
@@ -135,9 +135,9 @@ void CameraChooser::on_okBtn_cameraChooser_clicked()
 
     memcpy(camid,pstr.data(),pstr.size());
     qDebug() << "chose camera:" << camid;
-    camhandle =libqhyccd-> OpenQHYCCD(camid);
-    //camhandle = OpenQHYCCD(camid);
-    if(camhandle != NULL)
+    camera = OpenQHYCCD(camid);
+    //camera = OpenQHYCCD(camid);
+    if(camera != NULL)
     {
         //qDebug() << "OpenQHYCCD success";
         ix.isConnected = true;
@@ -145,14 +145,14 @@ void CameraChooser::on_okBtn_cameraChooser_clicked()
         ix.CamModel = ix.CamID.left(ix.CamID.lastIndexOf('-'));
         /*//20200220 lyl Add ReadMode Dialog
         ix.ReadModeList.clear();//清空列表
-        ret=GetQHYCCDNumberOfReadModes(camhandle,&ix.NumberOfReadModes);
+        ret=GetQHYCCDNumberOfReadModes(camera,&ix.NumberOfReadModes);
         if(ret == QHYCCD_SUCCESS)
         {
             readMode = new ReadMode(this);
             qDebug() << "GetQHYCCDNumberOfReadModes:"<<ix.NumberOfReadModes;
             for(int i=0; i<ix.NumberOfReadModes; i++)
             {
-                if (GetQHYCCDReadModeName(camhandle, i, ix.currentReadModeName) == 0)
+                if (GetQHYCCDReadModeName(camera, i, ix.currentReadModeName) == 0)
                     ix.ReadModeList.append(ix.currentReadModeName);//列表填充
             }
             //20200220 lyl Add ReadMode 可在此处增加对话框显示，选定readmode之后进行SetQHYCCDReadMode()
@@ -167,20 +167,20 @@ void CameraChooser::on_okBtn_cameraChooser_clicked()
 
         //test
         //ui->comboBox_readmode->setDisabled(true);
-        //ret = SetQHYCCDReadMode(camhandle, ix.currentReadMode);
-        ret = libqhyccd->SetQHYCCDReadMode(camhandle, ix.currentReadMode);
+        //ret = SetQHYCCDReadMode(camera, ix.currentReadMode);
+        ret = SetQHYCCDReadMode(camera, ix.currentReadMode);
         if(ret != QHYCCD_SUCCESS)
             qCritical("SetQHYCCDStreamMode: failed");
         else
             qDebug() << "current SetQHYCCDStreamMode success"<<ix.currentReadMode;
-        ret = libqhyccd->SetQHYCCDStreamMode(camhandle, 0);
-        //ret = SetQHYCCDStreamMode(camhandle, 0);
+        ret = SetQHYCCDStreamMode(camera, 0);
+        //ret = SetQHYCCDStreamMode(camera, 0);
         if(ret != QHYCCD_SUCCESS)
             qCritical("SetQHYCCDStreamMode: failed");
         else
             qDebug() << "SetQHYCCDStreamMode success";
-        ret =libqhyccd-> InitQHYCCD(camhandle);
-       // ret = InitQHYCCD(camhandle);
+        ret = InitQHYCCD(camera);
+       // ret = InitQHYCCD(camera);
         if(ret != QHYCCD_SUCCESS)
         {
             qCritical("InitQHYCCD: failed");

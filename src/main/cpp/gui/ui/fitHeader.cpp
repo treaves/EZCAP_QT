@@ -1,18 +1,20 @@
 #include "fitHeader.hpp"
-#include "ui_fitHeader.h"
 #include "ezCap.hpp"
 #include "mainMenu.hpp"
+#include "ui_fitHeader.h"
 #include <fitsio.h>
-#include <QFile>
-#include <QtCore/QTextStream>
-#include <QCloseEvent>
-#include <QLabel>
-#include <QAbstractButton>
-#include <QStylePainter>
-#include <QListView>
-#include <QTextCodec>
-#include <QDateTime>
+#include <opencv2/core/core.hpp>
 #include <opencv2/core/core_c.h>
+#include <QAbstractButton>
+#include <QCloseEvent>
+#include <QDateTime>
+#include <QDebug>
+#include <QFile>
+#include <QLabel>
+#include <QListView>
+#include <QStylePainter>
+#include <QtCore/QTextStream>
+#include <QTextCodec>
 
 FitHeader *fitHeader_dialog;
 extern IX ix;
@@ -508,11 +510,14 @@ void FitHeader::FITWrite(QString nameStr, unsigned char *Buf)
     }
 
     //-----remove overscan area----
-    int onlyStartX,onlyStartY,onlySizeX,onlySizeY;
-    IplImage *FitImg,*OnlyImg;
+    int onlyStartX;
+    int onlyStartY;
+    int onlySizeX;
+    int onlySizeY;
+    IplImage * FitImg = cvCreateImage(cvSize(ix.imageX ,ix.imageY ), IPL_DEPTH_16U, 1 );
+   cv::Mat imgY = cv::Mat(ix.imageX ,ix.imageY, IPL_DEPTH_16U);
+   IplImage * OnlyImg = nullptr;
 
-    FitImg = cvCreateImage(cvSize(ix.imageX ,ix.imageY ), IPL_DEPTH_16U, 1 );
-    //FitImg->imageData = (char*)Buf;
     memcpy(FitImg->imageData, Buf, FitImg->imageSize);
 
     if(ix.ignoreOverScan)//mainMenuBar->actIgnoreOverScanArea->isChecked())

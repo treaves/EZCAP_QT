@@ -3,7 +3,7 @@
 #include "ezCap.hpp"
 
 //#include "qhyccdStatus.hpp"
-#include "dllqhyccd.hpp"
+
 #include <QGridLayout>
 #include <QVBoxLayout>
 #include <QListView>
@@ -11,7 +11,7 @@
 
 ManagementMenu *managerMenu;
 extern struct IX ix;
-extern qhyccd_handle *camhandle;
+extern qhyccd_handle * camera;
 
 ManagementMenu::ManagementMenu(QWidget *parent) :
     QWidget(parent),
@@ -618,8 +618,8 @@ void ManagementMenu::on_hSlider_gain_preview_valueChanged(int value)
     if(ix.lastGain != ix.gain)
     {
         unsigned int ret = QHYCCD_ERROR;
-        ret = libqhyccd->SetQHYCCDParam(camhandle,CONTROL_GAIN,ix.gain);
-        //ret = SetQHYCCDParam(camhandle,CONTROL_GAIN,ix.gain);
+        ret = SetQHYCCDParam(camera,CONTROL_GAIN,ix.gain);
+        //ret = SetQHYCCDParam(camera,CONTROL_GAIN,ix.gain);
         if(ret == QHYCCD_SUCCESS)
         {
             ix.lastGain = ix.gain;
@@ -641,8 +641,8 @@ void ManagementMenu::on_hSlider_offset_preview_valueChanged(int value)
     if(ix.lastOffset != ix.offset)
     {
         unsigned int ret = QHYCCD_ERROR;
-        ret = libqhyccd->SetQHYCCDParam(camhandle,CONTROL_OFFSET,ix.offset);
-        //ret = SetQHYCCDParam(camhandle,CONTROL_OFFSET,ix.offset);
+        ret = SetQHYCCDParam(camera,CONTROL_OFFSET,ix.offset);
+        //ret = SetQHYCCDParam(camera,CONTROL_OFFSET,ix.offset);
         if(ret == QHYCCD_SUCCESS)
         {
             ix.lastOffset = ix.offset;
@@ -705,8 +705,8 @@ void ManagementMenu::on_hSlider_gain_focus_valueChanged(int value)
     if(ix.lastGain != ix.gain)
     {
         unsigned int ret = QHYCCD_ERROR;
-        ret = libqhyccd->SetQHYCCDParam(camhandle, CONTROL_GAIN, ix.gain);
-        //ret = SetQHYCCDParam(camhandle, CONTROL_GAIN, ix.gain);
+        ret = SetQHYCCDParam(camera, CONTROL_GAIN, ix.gain);
+        //ret = SetQHYCCDParam(camera, CONTROL_GAIN, ix.gain);
         if(ret == QHYCCD_SUCCESS)
         {
             ix.lastGain = ix.gain;
@@ -728,8 +728,8 @@ void ManagementMenu::on_hSlider_offset_focus_valueChanged(int value)
     if(ix.lastOffset != ix.offset)
     {
         unsigned int ret = QHYCCD_ERROR;
-        ret = libqhyccd->SetQHYCCDParam(camhandle,CONTROL_OFFSET,ix.offset);
-        //ret = SetQHYCCDParam(camhandle,CONTROL_OFFSET,ix.offset);
+        ret = SetQHYCCDParam(camera,CONTROL_OFFSET,ix.offset);
+        //ret = SetQHYCCDParam(camera,CONTROL_OFFSET,ix.offset);
         if(ret == QHYCCD_SUCCESS)
         {
             ix.lastOffset = ix.offset;
@@ -792,8 +792,8 @@ void ManagementMenu::on_hSlider_gain_capture_valueChanged(int value)
     if(ix.lastGain != ix.gain)
     {
         unsigned int ret = QHYCCD_ERROR;
-        ret = libqhyccd->SetQHYCCDParam(camhandle,CONTROL_GAIN,ix.gain);
-        //ret = SetQHYCCDParam(camhandle,CONTROL_GAIN,ix.gain);
+        ret = SetQHYCCDParam(camera,CONTROL_GAIN,ix.gain);
+        //ret = SetQHYCCDParam(camera,CONTROL_GAIN,ix.gain);
         if(ret == QHYCCD_SUCCESS)
         {
             ix.lastGain = ix.gain;
@@ -815,8 +815,8 @@ void ManagementMenu::on_hSlider_offset_capture_valueChanged(int value)
     if(ix.lastOffset != ix.offset)
     {
         unsigned int ret = QHYCCD_ERROR;
-        ret = libqhyccd->SetQHYCCDParam(camhandle, CONTROL_OFFSET, ix.offset);
-        //ret = SetQHYCCDParam(camhandle, CONTROL_OFFSET, ix.offset);
+        ret = SetQHYCCDParam(camera, CONTROL_OFFSET, ix.offset);
+        //ret = SetQHYCCDParam(camera, CONTROL_OFFSET, ix.offset);
         if(ret == QHYCCD_SUCCESS)
         {
             ix.lastOffset = ix.offset;

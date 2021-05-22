@@ -7,7 +7,6 @@
 #include <opencv2/core/types_c.h>
 #include <QVBoxLayout>
 #include <QTranslator>
-#include "disktools.hpp"
 #include "myStruct.hpp"
 #ifdef WIN32
 #include <windows.h>
@@ -22,14 +21,11 @@ class BorderLayout;
 
 class QImage;
 class QScrollArea;
-class QScrollBar;
 class QLabel;
 class QMenu;
 
 class MenuForm;
-class DownloadPreThread;
-class DownloadCapThread;
-class DownloadFocThread;
+class CameraDownloadThread;
 
 //-----------执行计划任务线程类-------
 class ExecutePlanTable : public QThread
@@ -275,9 +271,9 @@ public:
 
     //----------定义线程对象-------------
     ExecutePlanTable *exePlanTable;
-    DownloadPreThread *downloadPre;
-    DownloadCapThread *downloadCap;
-    DownloadFocThread *downloadFoc;
+    CameraDownloadThread *downloadPre;
+    CameraDownloadThread *downloadCap;
+    CameraDownloadThread *downloadFoc;
 
    //-----------滤镜轮调用API改成阻塞型，因此需要放入线程执行-------------
     ExecuteCFWOrder *runCFWOrder;
