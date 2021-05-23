@@ -1,8 +1,7 @@
 #include "readmode.hpp"
 #include "ui_readmode.h"
 #include "ezCap.hpp"
-//#include "qhyccdStatus.hpp"
-
+#include <qhyccd.h>
 #include <QDebug>
 #include <QListView>
 extern struct IX ix;

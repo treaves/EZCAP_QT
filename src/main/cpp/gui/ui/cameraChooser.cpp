@@ -5,9 +5,7 @@
 //#include "readmode.hpp"
 //#include "ui_readmode.hpp"
 #include <QException>
-
-//#include "qhyccdStatus.hpp"
-
+#include <qhyccd.h>
 #include <QDebug>
 #include <QMessageBox>
 #include <QDesktopServices>

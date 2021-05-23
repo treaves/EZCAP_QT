@@ -38,6 +38,7 @@
 #include <QScrollBar>
 #include <QStorageInfo>
 #include <QtCore>
+#include <qhyccd.h>
 
 EZCAP *mainWidget;
 const bool EZCAP::TESTED_PID = false;
@@ -61,12 +62,12 @@ void EZCAP::updateWindowsTitle() {
     uint8_t camStatus = '-';
     uint32_t sdk_build_version='-';
     qDebug() << "connected" + ix.isConnected;
-    sdk_build_version = GetQHYCCDSDKBuildVersion();
+//    sdk_build_version = GetQHYCCDSDKBuildVersion();
     if(ix.isConnected){
         qDebug() << "====>GET SPEED";
-        superSpeed = GetCameraIsSuperSpeedFromID(camid);
+//        superSpeed = GetCameraIsSuperSpeedFromID(camid);
         superSpeed = superSpeed + 2 +48;//48=0(ascii code) In SDK 0=usb2.0 1=usb3.0 , so speed+=2
-        camStatus = GetCameraStatusFromID(camid)+48;//48=0(ascii code)
+//        camStatus = GetCameraStatusFromID(camid)+48;//48=0(ascii code)
     }else{
         ix.CamID = "-";
         ix.FPGAVer = "-";
@@ -632,16 +633,16 @@ EZCAP::EZCAP(QWidget *parent) :
         return;
     }
     qDebug() << "regist event pnp_Event_In_Func";
-    RegisterPnpEventOut(pnp_Event_Out_Func);
-    RegisterPnpEventIn(pnp_Event_In_Func);
+//    RegisterPnpEventOut(pnp_Event_Out_Func);
+//    RegisterPnpEventIn(pnp_Event_In_Func);
     qDebug() << "regist event pnp_Event_Out_Func";
     qDebug() << "regist event data_Event_Single_Func";
-    RegisterDataEventSingle(data_Event_Single_Func);
+//    RegisterDataEventSingle(data_Event_Single_Func);
     qDebug() << "regist event data_Event_Live_Func";
-    RegisterDataEventLive(data_Event_Live_Func);
+//    RegisterDataEventLive(data_Event_Live_Func);
     qDebug() << "regist event end.";
-    RegisterPnpEvent(pnpEventExFunc);
-    RegisterTransferEventError(transferEventErrorFunc);
+//    RegisterPnpEvent(pnpEventExFunc);
+//    RegisterTransferEventError(transferEventErrorFunc);
     updateWindowsTitle();
     ui->plainTextEdit_debug->hide();
 }
@@ -7177,10 +7178,10 @@ void EZCAP::ditherTimer_timeout()
     if(phdLink_dialog->IsDitherEnabled())
     {
         char str[1024];
-        int ret;
+        int ret{-1};
         QString recStr;
         //ret = CheckPHD2Status(str);
-        ret = CheckPHD2Status(str);
+//        ret = CheckPHD2Status(str);
         if(ret == 0)
         {
             recStr = QString(QLatin1String(str));

@@ -1,7 +1,7 @@
 #include "darkframetool.hpp"
 #include "ui_darkFrameTool.h"
 #include "planner.hpp"
-//#include "qhyccdStatus.hpp"
+#include <qhyccd.h>
 
 #include <QDebug>
 #include <QTimer>

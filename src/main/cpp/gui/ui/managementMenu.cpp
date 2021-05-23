@@ -2,7 +2,7 @@
 #include "ui_managementMenu.h"
 #include "ezCap.hpp"
 
-//#include "qhyccdStatus.hpp"
+#include <qhyccd.h>
 
 #include <QGridLayout>
 #include <QVBoxLayout>

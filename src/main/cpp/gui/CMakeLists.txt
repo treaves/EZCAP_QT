@@ -90,7 +90,7 @@ target_include_directories(EZCap_Qt PRIVATE ${QHYCCD_INCLUDE_DIRS} ${CFITSIO_INC
 target_link_libraries(
   EZCap_Qt
   PUBLIC Qt5::Core Qt5::Widgets
-  PRIVATE ezcap project_warnings project_options ${QHYCCD_LIBRARIES} ${CFITSIO_LIBRARIES} ${OpenCV_LIBS}
+  PRIVATE project_warnings project_options ${QHYCCD_LIBRARIES} ${CFITSIO_LIBRARIES} ${OpenCV_LIBS}
 )
 
 target_compile_features(EZCap_Qt PUBLIC cxx_nullptr cxx_lambdas)

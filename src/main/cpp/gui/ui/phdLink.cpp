@@ -40,12 +40,12 @@ PHDLink::~PHDLink()
 
 void PHDLink::on_pBtn_connect_clicked()
 {
-    int ret;
+    int ret{-1};
 
     if(!isPHDConnect)
     {
         //ret = Connect2PHD2();  //connect PHD2
-        ret = Connect2PHD2();
+//        ret = Connect2PHD2();
         if(ret == 0)
         {
             qDebug() << "connect phd2";
@@ -66,7 +66,7 @@ void PHDLink::on_pBtn_connect_clicked()
     else
     {
         //ret = DisConnect2PHD2();    //Dis PHD2
-        ret = DisConnect2PHD2();
+//        ret = DisConnect2PHD2();
         if(ret == 0)
         {
             qDebug() << "disconnect PHD2";
